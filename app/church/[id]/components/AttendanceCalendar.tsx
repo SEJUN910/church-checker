@@ -83,40 +83,40 @@ export default function AttendanceCalendar({
   return (
     <div className="bg-white rounded-xl shadow-md p-6">
       {/* 헤더 */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-4 gap-2">
         <button
           onClick={prevMonth}
-          className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+          className="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors text-sm whitespace-nowrap"
         >
-          ← 이전
+          ←
         </button>
-        <div className="flex items-center gap-3">
-          <h2 className="text-2xl font-bold text-gray-800">
+        <div className="flex items-center gap-2 flex-1 justify-center">
+          <h2 className="text-lg font-bold text-gray-800 whitespace-nowrap">
             {year}년 {month + 1}월
           </h2>
           <button
             onClick={goToday}
-            className="px-3 py-1 text-sm rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+            className="px-2 py-1 text-xs rounded-lg bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors whitespace-nowrap"
           >
             오늘
           </button>
         </div>
         <button
           onClick={nextMonth}
-          className="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors"
+          className="px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 transition-colors text-sm whitespace-nowrap"
         >
-          다음 →
+          →
         </button>
       </div>
 
       {/* 범례 */}
-      <div className="flex items-center gap-4 mb-4 text-sm">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-blue-500"></div>
+      <div className="flex items-center gap-3 mb-3 text-xs">
+        <div className="flex items-center gap-1.5 whitespace-nowrap">
+          <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div>
           <span>교사</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-green-500"></div>
+        <div className="flex items-center gap-1.5 whitespace-nowrap">
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500"></div>
           <span>학생</span>
         </div>
       </div>
@@ -189,10 +189,10 @@ export default function AttendanceCalendar({
       </div>
 
       {/* 통계 요약 */}
-      <div className="mt-6 pt-6 border-t grid grid-cols-2 gap-4">
-        <div className="bg-blue-50 rounded-lg p-4">
-          <div className="text-sm text-blue-600 mb-1">이번 달 교사 출석</div>
-          <div className="text-2xl font-bold text-blue-700">
+      <div className="mt-4 pt-4 border-t grid grid-cols-2 gap-3">
+        <div className="bg-blue-50 rounded-lg p-3">
+          <div className="text-xs text-blue-600 mb-1 whitespace-nowrap">이번 달 교사 출석</div>
+          <div className="text-xl font-bold text-blue-700">
             {attendanceRecords.filter(r => {
               const recordDate = new Date(r.date)
               return (
@@ -201,12 +201,12 @@ export default function AttendanceCalendar({
                 students.find(s => s.id === r.student_id)?.type === 'teacher'
               )
             }).length}
-            <span className="text-sm font-normal ml-1">회</span>
+            <span className="text-xs font-normal ml-1">회</span>
           </div>
         </div>
-        <div className="bg-green-50 rounded-lg p-4">
-          <div className="text-sm text-green-600 mb-1">이번 달 학생 출석</div>
-          <div className="text-2xl font-bold text-green-700">
+        <div className="bg-green-50 rounded-lg p-3">
+          <div className="text-xs text-green-600 mb-1 whitespace-nowrap">이번 달 학생 출석</div>
+          <div className="text-xl font-bold text-green-700">
             {attendanceRecords.filter(r => {
               const recordDate = new Date(r.date)
               return (
@@ -215,7 +215,7 @@ export default function AttendanceCalendar({
                 students.find(s => s.id === r.student_id)?.type === 'student'
               )
             }).length}
-            <span className="text-sm font-normal ml-1">회</span>
+            <span className="text-xs font-normal ml-1">회</span>
           </div>
         </div>
       </div>

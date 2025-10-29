@@ -299,9 +299,9 @@ export default function ChurchDetailPage() {
                 {church.description && (
                   <p className="text-gray-600">{church.description}</p>
                 )}
-                <div className="mt-3 flex items-center gap-4 text-sm text-gray-500">
-                  <span>👥 등록 인원: {students.length}명</span>
-                  <span>✅ 오늘 출석: {todayAttendanceIds.length}명</span>
+                <div className="mt-3 flex items-center gap-3 text-sm text-gray-500 flex-wrap">
+                  <span className="whitespace-nowrap">👥 등록 인원: {students.length}명</span>
+                  <span className="whitespace-nowrap">✅ 오늘 출석: {todayAttendanceIds.length}명</span>
                 </div>
               </div>
             </div>
@@ -362,7 +362,7 @@ export default function ChurchDetailPage() {
               <div className="flex gap-2">
                 <button
                   onClick={() => setAttendanceType('student')}
-                  className={`flex-1 rounded-lg px-4 py-3 font-semibold transition-colors ${
+                  className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors whitespace-nowrap ${
                     attendanceType === 'student'
                       ? 'bg-green-600 text-white'
                       : 'bg-white text-gray-600 hover:bg-gray-50'
@@ -372,7 +372,7 @@ export default function ChurchDetailPage() {
                 </button>
                 <button
                   onClick={() => setAttendanceType('teacher')}
-                  className={`flex-1 rounded-lg px-4 py-3 font-semibold transition-colors ${
+                  className={`flex-1 rounded-lg px-3 py-2.5 text-sm font-semibold transition-colors whitespace-nowrap ${
                     attendanceType === 'teacher'
                       ? 'bg-blue-600 text-white'
                       : 'bg-white text-gray-600 hover:bg-gray-50'
@@ -430,10 +430,10 @@ export default function ChurchDetailPage() {
                             <h3 className="text-lg font-bold text-gray-800">{student.name}</h3>
                             {isChecked && <span className="text-xl">✅</span>}
                           </div>
-                          <div className="mt-1 flex items-center gap-3 text-sm text-gray-600">
-                            {student.grade && <span>📚 {student.grade}</span>}
-                            {student.age && <span>🎂 {student.age}세</span>}
-                            {student.phone && <span>📱 {student.phone}</span>}
+                          <div className="mt-1 flex items-center gap-2 text-sm text-gray-600 flex-wrap">
+                            {student.grade && <span className="whitespace-nowrap">📚 {student.grade}</span>}
+                            {student.age && <span className="whitespace-nowrap">🎂 {student.age}세</span>}
+                            {student.phone && <span className="whitespace-nowrap">📱 {student.phone}</span>}
                           </div>
                         </div>
                       </div>
@@ -513,9 +513,9 @@ export default function ChurchDetailPage() {
                       )}
 
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="text-lg font-bold text-gray-800">{student.name}</h3>
-                          <span className={`px-2 py-0.5 text-xs font-semibold rounded ${
+                          <span className={`px-2 py-0.5 text-xs font-semibold rounded whitespace-nowrap ${
                             student.type === 'teacher'
                               ? 'bg-blue-100 text-blue-700'
                               : 'bg-green-100 text-green-700'
@@ -523,12 +523,12 @@ export default function ChurchDetailPage() {
                             {student.type === 'teacher' ? '교사' : '학생'}
                           </span>
                         </div>
-                        <div className="mt-1 flex items-center gap-3 text-sm text-gray-600">
-                          {student.grade && <span>📚 {student.grade}</span>}
-                          {student.age && <span>🎂 {student.age}세</span>}
-                          {student.phone && <span>📱 {student.phone}</span>}
+                        <div className="mt-1 flex items-center gap-2 text-sm text-gray-600 flex-wrap">
+                          {student.grade && <span className="whitespace-nowrap">📚 {student.grade}</span>}
+                          {student.age && <span className="whitespace-nowrap">🎂 {student.age}세</span>}
+                          {student.phone && <span className="whitespace-nowrap">📱 {student.phone}</span>}
                         </div>
-                        <p className="mt-1 text-xs text-gray-400">
+                        <p className="mt-1 text-xs text-gray-400 whitespace-nowrap">
                           등록일: {new Date(student.registered_at).toLocaleDateString()}
                         </p>
                       </div>
@@ -549,20 +549,20 @@ export default function ChurchDetailPage() {
 
       {/* 인원 등록 모달 */}
       {showAddStudentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="mb-4 text-2xl font-bold text-gray-800">새 인원 등록</h2>
-            <form onSubmit={handleAddStudent} className="space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm p-4 overflow-y-auto">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl my-8 max-h-[90vh] overflow-y-auto">
+            <h2 className="mb-3 text-xl font-bold text-gray-800">새 인원 등록</h2>
+            <form onSubmit={handleAddStudent} className="space-y-3">
               {/* 교사/학생 선택 */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
                   구분 *
                 </label>
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={() => setNewStudent({ ...newStudent, type: 'student' })}
-                    className={`flex-1 rounded-lg px-4 py-3 font-semibold transition-colors ${
+                    className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
                       newStudent.type === 'student'
                         ? 'bg-green-600 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -573,7 +573,7 @@ export default function ChurchDetailPage() {
                   <button
                     type="button"
                     onClick={() => setNewStudent({ ...newStudent, type: 'teacher' })}
-                    className={`flex-1 rounded-lg px-4 py-3 font-semibold transition-colors ${
+                    className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
                       newStudent.type === 'teacher'
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -586,7 +586,7 @@ export default function ChurchDetailPage() {
 
               {/* 사진 업로드 */}
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
                   사진
                 </label>
                 <ImageUpload
@@ -596,57 +596,57 @@ export default function ChurchDetailPage() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
                   이름 *
                 </label>
                 <input
                   type="text"
                   value={newStudent.name}
                   onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="홍길동"
                   required
                 />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-medium text-gray-700">
+                <label className="mb-1.5 block text-sm font-medium text-gray-700">
                   전화번호
                 </label>
                 <input
                   type="tel"
                   value={newStudent.phone}
                   onChange={(e) => setNewStudent({ ...newStudent, phone: e.target.value })}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="010-1234-5678"
                 />
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <div className="flex-1">
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
                     나이
                   </label>
                   <input
                     type="number"
                     value={newStudent.age}
                     onChange={(e) => setNewStudent({ ...newStudent, age: e.target.value })}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     placeholder="15"
                   />
                 </div>
                 <div className="flex-1">
-                  <label className="mb-2 block text-sm font-medium text-gray-700">
+                  <label className="mb-1.5 block text-sm font-medium text-gray-700">
                     학년
                   </label>
                   <input
                     type="text"
                     value={newStudent.grade}
                     onChange={(e) => setNewStudent({ ...newStudent, grade: e.target.value })}
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     placeholder="중1"
                   />
                 </div>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-2 pt-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -654,13 +654,13 @@ export default function ChurchDetailPage() {
                     setNewStudent({ name: '', phone: '', age: '', grade: '', type: 'student' });
                     setSelectedPhoto(null);
                   }}
-                  className="flex-1 rounded-lg border border-gray-300 px-4 py-3 font-semibold text-gray-700 hover:bg-gray-50"
+                  className="flex-1 rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700"
+                  className="flex-1 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
                 >
                   등록하기
                 </button>
