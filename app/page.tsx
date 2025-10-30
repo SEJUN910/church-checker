@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import LoadingSpinner from '@/app/components/LoadingSpinner';
 
 interface Church {
   id: string;
@@ -25,7 +26,6 @@ export default function Home() {
 
   const supabase = createClient();
 
-  // Supabase에서 교회 목록 불러오기
   useEffect(() => {
     checkUser();
   }, []);
@@ -37,7 +37,6 @@ export default function Home() {
       setUserName(user.user_metadata?.name || '사용자');
       loadChurches();
     } else {
-      // 임시 사용자 체크
       const tempUserId = localStorage.getItem('tempUserId');
       const tempUserName = localStorage.getItem('tempUserName');
 
@@ -46,7 +45,6 @@ export default function Home() {
         setUserName(tempUserName);
         loadChurches();
       } else {
-        // 로그인되지 않았으면 로그인 페이지로
         router.push('/login');
       }
     }
@@ -69,13 +67,12 @@ export default function Home() {
       setChurches(data || []);
     } catch (error) {
       console.error('교회 목록 로드 실패:', error);
-      alert('교회 목록을 불러오는데 실패했습니다. Supabase 설정을 확인해주세요.');
+      alert('교회 목록을 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
     }
   };
 
-  // 새 교회 생성
   const handleCreateChurch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newChurchName.trim() || !userId) return;
@@ -105,7 +102,6 @@ export default function Home() {
     }
   };
 
-  // 교회 삭제
   const handleDeleteChurch = async (id: string) => {
     if (!confirm('정말 삭제하시겠습니까?')) return;
 
@@ -125,127 +121,164 @@ export default function Home() {
   };
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-linear-to-b from-blue-50 to-white">
-        <div className="text-center">
-          <div className="mb-4 text-5xl">✝️</div>
-          <p className="text-gray-600">로딩 중...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
-    <div className="min-h-screen bg-linear-to-b from-blue-50 to-white p-4">
-      <div className="mx-auto max-w-4xl">
-        {/* 사용자 정보 바 */}
-        <div className="mb-4 flex items-center justify-between rounded-lg bg-white px-4 py-3 shadow-sm">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">👤</span>
-            <span className="font-semibold text-gray-800">{userName}</span>
-          </div>
-          <button
-            onClick={handleLogout}
-            className="rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-100"
-          >
-            로그아웃
-          </button>
-        </div>
-
-        {/* 헤더 */}
-        <header className="mb-8 text-center">
-          <div className="mb-2 text-5xl">✝️</div>
-          <h1 className="mb-2 text-3xl font-bold text-gray-800">교회 출석 관리</h1>
-          <p className="text-sm text-gray-600">교회/모임을 선택하거나 새로 만들어보세요</p>
-        </header>
-
-        {/* 새 교회 생성 버튼 */}
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="mb-6 w-full rounded-xl border-2 border-dashed border-blue-300 bg-blue-50 p-6 text-blue-600 transition-colors hover:border-blue-400 hover:bg-blue-100"
-        >
-          <div className="text-3xl">+</div>
-          <div className="mt-2 font-semibold">새 교회/모임 만들기</div>
-        </button>
-
-        {/* 교회 목록 */}
-        <div className="space-y-4">
-          {churches.length === 0 ? (
-            <div className="rounded-xl bg-white p-8 text-center text-gray-500 shadow-sm">
-              <div className="mb-2 text-4xl">📋</div>
-              <p>아직 생성된 교회/모임이 없습니다</p>
-              <p className="mt-1 text-sm">위 버튼을 눌러 새로 만들어보세요</p>
+    <div className="min-h-screen bg-gray-50">
+      {/* 상단 헤더 */}
+      <div className="bg-white">
+        <div className="mx-auto max-w-md px-5 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">안녕하세요</p>
+              <h1 className="text-2xl font-extrabold text-gray-900">{userName}님</h1>
             </div>
-          ) : (
-            churches.map((church) => (
-              <div
-                key={church.id}
-                className="flex items-center justify-between rounded-xl bg-white p-6 shadow-md transition-shadow hover:shadow-lg"
-              >
-                <Link href={`/church/${church.id}`} className="flex-1">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-800">{church.name}</h3>
-                    {church.description && (
-                      <p className="mt-1 text-sm text-gray-600">{church.description}</p>
-                    )}
-                    <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
-                      <span>📅 {new Date(church.created_at).toLocaleDateString()}</span>
-                    </div>
-                  </div>
-                </Link>
-                <button
-                  onClick={() => handleDeleteChurch(church.id)}
-                  className="ml-4 rounded-lg px-4 py-2 text-red-600 hover:bg-red-50"
-                >
-                  삭제
-                </button>
-              </div>
-            ))
-          )}
-        </div>
-
-        {/* PWA 안내 */}
-        <div className="mt-8 rounded-lg bg-blue-50 p-4 text-center">
-          <p className="text-sm text-blue-800">
-            📱 홈 화면에 추가하여 앱처럼 사용하실 수 있습니다
-          </p>
+            <button
+              onClick={handleLogout}
+              className="rounded-full bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-200"
+            >
+              로그아웃
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* 교회 생성 모달 */}
+      {/* 메인 컨텐츠 */}
+      <div className="mx-auto max-w-md px-5 py-6">
+        {/* 통계 카드 */}
+        <div className="mb-5 rounded-xl bg-white border border-gray-200 p-5">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-base font-bold text-gray-900">내 교회/모임</h2>
+            <span className="text-xs text-gray-500">{churches.length}개</span>
+          </div>
+
+          <div className="flex gap-2">
+            <div className="flex-1 rounded-lg bg-blue-50 p-2.5 text-center">
+              <p className="text-xs text-blue-600 mb-0.5">오늘</p>
+              <p className="text-xl font-bold text-blue-600">0</p>
+            </div>
+            <div className="flex-1 rounded-lg bg-green-50 p-2.5 text-center">
+              <p className="text-xs text-green-600 mb-0.5">이번 주</p>
+              <p className="text-xl font-bold text-green-600">0</p>
+            </div>
+          </div>
+        </div>
+
+        {/* 교회 목록 */}
+        <div className="mb-20">
+          <h3 className="mb-2 text-xs font-bold text-gray-700">교회/모임 목록</h3>
+
+          {churches.length === 0 ? (
+            <div className="rounded-xl border border-gray-200 bg-white p-6 text-center">
+              <div className="mb-2 text-4xl">🏛️</div>
+              <p className="text-sm font-bold text-gray-900 mb-1">아직 교회가 없어요</p>
+              <p className="text-xs text-gray-500">
+                아래 버튼을 눌러 첫 번째 교회를 만들어보세요
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {churches.map((church) => (
+                <Link
+                  key={church.id}
+                  href={`/church/${church.id}`}
+                  className="block"
+                >
+                  <div className="rounded-xl border border-gray-200 bg-white p-4 hover:border-gray-300 transition-all">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="text-base font-bold text-gray-900 mb-1">
+                          {church.name}
+                        </h4>
+                        {church.description && (
+                          <p className="text-xs text-gray-600 mb-2">
+                            {church.description}
+                          </p>
+                        )}
+                        <span className="text-xs text-gray-400">
+                          {new Date(church.created_at).toLocaleDateString('ko-KR', {
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric'
+                          })}
+                        </span>
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleDeleteChurch(church.id);
+                        }}
+                        className="ml-3 rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* 하단 고정 버튼 */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 pb-5">
+        <div className="mx-auto max-w-md">
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="w-full rounded-lg bg-blue-600 py-3 text-sm font-bold text-white hover:bg-blue-700 active:scale-[0.98] transition-all"
+          >
+            새 교회 만들기
+          </button>
+        </div>
+      </div>
+
+      {/* 생성 모달 - 토스 스타일 */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="mb-4 text-2xl font-bold text-gray-800">새 교회/모임 만들기</h2>
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/20 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-t-3xl bg-white p-6 pb-8 animate-slide-up">
+            <div className="mb-6">
+              <h2 className="text-2xl font-extrabold text-gray-900 mb-1">
+                새 교회 만들기
+              </h2>
+              <p className="text-sm text-gray-500">
+                교회 이름과 설명을 입력해주세요
+              </p>
+            </div>
+
             <form onSubmit={handleCreateChurch} className="space-y-4">
               <div>
-                <label htmlFor="churchName" className="mb-2 block text-sm font-medium text-gray-700">
-                  이름 *
+                <label className="mb-2 block text-sm font-bold text-gray-900">
+                  이름
                 </label>
                 <input
                   type="text"
-                  id="churchName"
                   value={newChurchName}
                   onChange={(e) => setNewChurchName(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base font-semibold text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
                   placeholder="예: 사랑의교회 청소년부"
                   required
                 />
               </div>
+
               <div>
-                <label htmlFor="churchDesc" className="mb-2 block text-sm font-medium text-gray-700">
+                <label className="mb-2 block text-sm font-bold text-gray-900">
                   설명 (선택)
                 </label>
                 <textarea
-                  id="churchDesc"
                   value={newChurchDesc}
                   onChange={(e) => setNewChurchDesc(e.target.value)}
-                  className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none resize-none"
                   placeholder="간단한 설명을 입력하세요"
                   rows={3}
                 />
               </div>
-              <div className="flex gap-3">
+
+              <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={() => {
@@ -253,21 +286,35 @@ export default function Home() {
                     setNewChurchName('');
                     setNewChurchDesc('');
                   }}
-                  className="flex-1 rounded-lg border border-gray-300 px-4 py-3 font-semibold text-gray-700 hover:bg-gray-50"
+                  className="flex-1 rounded-full border-2 border-gray-200 py-3.5 text-base font-bold text-gray-700 hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-lg bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-700"
+                  className="flex-1 rounded-full bg-blue-600 py-3.5 text-base font-bold text-white hover:bg-blue-700 active:scale-95 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.4)]"
                 >
-                  생성하기
+                  만들기
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      <style jsx>{`
+        @keyframes slide-up {
+          from {
+            transform: translateY(100%);
+          }
+          to {
+            transform: translateY(0);
+          }
+        }
+        .animate-slide-up {
+          animation: slide-up 0.3s ease-out;
+        }
+      `}</style>
     </div>
   );
 }
