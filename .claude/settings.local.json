@@ -13,7 +13,9 @@
       "Bash(node:*)",
       "Bash(git remote set-url:*)",
       "Bash(npm run build:*)",
-      "Bash(cat:*)"
+      "Bash(cat:*)",
+      "Bash(git checkout:*)",
+      "Bash(cmd /c taskkill /F /PID 29176)"
     ],
     "deny": [],
     "ask": []

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import LoadingSpinner from '@/app/components/LoadingSpinner';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -53,38 +54,41 @@ export default function LoginPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-blue-50 to-white">
-        <div className="text-center">
-          <div className="mb-4 text-5xl">✝️</div>
-          <p className="text-gray-600">로딩 중...</p>
-        </div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-b from-blue-50 to-white p-4">
-      <div className="w-full max-w-md">
-        {/* 로고 및 헤더 */}
-        <div className="mb-8 text-center">
-          <div className="mb-4 text-7xl">✝️</div>
-          <h1 className="mb-2 text-4xl font-bold text-gray-800">교회 출석 체크</h1>
-          <p className="text-gray-600">간편하게 출석을 관리하세요</p>
+    <div className="flex min-h-screen flex-col items-center justify-center p-5 relative overflow-hidden">
+      {/* 배경 이미지 */}
+      <div
+        className="fixed inset-0 z-0"
+        style={{
+          backgroundImage: 'url(https://uvfkbaagtgvllbhwoufc.supabase.co/storage/v1/object/public/student-photos/Gemini_Generated_Image_g2mq6ig2mq6ig2mq.png)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat'
+        }}
+      >
+        {/* 오버레이 */}
+        <div className="absolute inset-0 bg-black/20" />
+      </div>
+
+      <div className="w-full max-w-md relative z-10">
+        {/* 헤더 */}
+        <div className="mb-12 text-center">
+          <h1 className="mb-3 text-5xl font-black text-white drop-shadow-lg">엔크리스토</h1>
+          <p className="text-lg text-white/90 font-medium drop-shadow">그리스도 안에서</p>
+          <p className="text-sm text-white/80 mt-2 font-light" style={{ fontFamily: 'serif' }}>ἐν Χριστῷ</p>
         </div>
 
-        {/* 로그인 카드 */}
-        <div className="rounded-2xl bg-white p-8 shadow-xl">
-          <h2 className="mb-6 text-center text-xl font-semibold text-gray-800">
-            시작하기
-          </h2>
-
+        {/* 로그인 버튼들 */}
+        <div className="space-y-3">
           {/* 카카오 로그인 버튼 */}
           <button
             onClick={handleKakaoLogin}
-            className="mb-3 flex w-full items-center justify-center gap-3 rounded-lg bg-[#FEE500] px-6 py-4 font-semibold text-[#000000] transition-all hover:bg-[#FDD835]"
+            className="flex w-full items-center justify-center gap-3 rounded-xl bg-[#FEE500] px-6 py-4 font-bold text-[#000000] transition-all hover:bg-[#FDD835] active:scale-[0.98] shadow-lg"
           >
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
               <path d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.9 5.3 4.7 6.7-.2.8-.7 2.8-.8 3.2-.1.5.2.5.4.4.3-.1 3.7-2.5 4.3-2.9.5.1 1 .1 1.4.1 5.5 0 10-3.6 10-8S17.5 3 12 3z"/>
             </svg>
             카카오로 시작하기
@@ -93,31 +97,22 @@ export default function LoginPage() {
           {/* 개발용 임시 로그인 */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
+              <div className="w-full border-t border-white/30"></div>
             </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-white px-2 text-gray-500">개발 모드</span>
+            <div className="relative flex justify-center text-xs">
+              <span className="bg-transparent px-3 text-white/80">또는</span>
             </div>
           </div>
 
           <button
             onClick={handleDevLogin}
-            className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-gray-300 bg-white px-6 py-4 font-semibold text-gray-700 transition-all hover:bg-gray-50"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-white/50 bg-white/10 backdrop-blur-sm px-6 py-4 font-bold text-white transition-all hover:bg-white/20 active:scale-[0.98] shadow-lg"
           >
-            🔧 임시 로그인 (개발용)
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            빠른 시작하기
           </button>
-
-          <p className="mt-6 text-center text-xs text-gray-500">
-            카카오 계정으로 로그인하여<br />
-            안전하게 출석을 관리하세요
-          </p>
-        </div>
-
-        {/* PWA 안내 */}
-        <div className="mt-6 rounded-lg bg-blue-50 p-4 text-center">
-          <p className="text-sm text-blue-800">
-            📱 홈 화면에 추가하여 앱처럼 사용하실 수 있습니다
-          </p>
         </div>
       </div>
     </div>

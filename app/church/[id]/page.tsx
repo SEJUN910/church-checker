@@ -57,6 +57,14 @@ export default function ChurchDetailPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showManagementMenu, setShowManagementMenu] = useState(() => {
+    // localStorage에서 관리 메뉴 상태 불러오기
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('showManagementMenu');
+      return saved === 'true';
+    }
+    return false;
+  });
 
   const supabase = createClient();
 
@@ -69,6 +77,13 @@ export default function ChurchDetailPage() {
     type: 'student' as 'student' | 'teacher'
   });
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+
+  // 관리 메뉴 상태가 변경될 때 localStorage에 저장
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('showManagementMenu', showManagementMenu.toString());
+    }
+  }, [showManagementMenu]);
 
   // 데이터 로드
   useEffect(() => {
@@ -429,6 +444,118 @@ export default function ChurchDetailPage() {
           >
             인원
           </button>
+        </div>
+
+        {/* 새로운 기능 메뉴 */}
+        <div className="mb-5">
+          <button
+            onClick={() => setShowManagementMenu(!showManagementMenu)}
+            className="w-full flex items-center justify-between mb-3 px-4 py-3 rounded-lg border-2 border-gray-300 bg-white text-sm font-semibold text-gray-700 hover:border-blue-400 hover:text-blue-600 transition-all shadow-sm"
+          >
+            <span>관리 메뉴</span>
+            <svg
+              className={`w-5 h-5 transition-transform ${showManagementMenu ? 'rotate-180' : ''}`}
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+
+          {showManagementMenu && (
+            <div className="grid grid-cols-2 gap-3 animate-slide-down">
+              <Link href={`/church/${churchId}/calendar`}>
+                <div className="rounded-xl border border-gray-200 bg-white p-4 hover:border-blue-300 hover:shadow-md transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">교회 달력</p>
+                      <p className="text-xs text-gray-500">일정 관리</p>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+
+              <Link href={`/church/${churchId}/service-schedule`}>
+                <div className="rounded-xl border border-gray-200 bg-white p-4 hover:border-purple-300 hover:shadow-md transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">봉사자</p>
+                      <p className="text-xs text-gray-500">봉사자 배정</p>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+
+              <Link href={`/church/${churchId}/prayer`}>
+                <div className="rounded-xl border border-gray-200 bg-white p-4 hover:border-green-300 hover:shadow-md transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
+                      <span className="text-2xl">🙏</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">기도제목</p>
+                      <p className="text-xs text-gray-500">함께 기도</p>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+
+              <Link href={`/church/${churchId}/offerings`}>
+                <div className="rounded-xl border border-gray-200 bg-white p-4 hover:border-yellow-300 hover:shadow-md transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-yellow-100 flex items-center justify-center">
+                      <span className="text-2xl">💰</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">헌금 관리</p>
+                      <p className="text-xs text-gray-500">헌금 기록</p>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+
+              <Link href={`/church/${churchId}/expenses`}>
+                <div className="rounded-xl border border-gray-200 bg-white p-4 hover:border-red-300 hover:shadow-md transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">지출 기록</p>
+                      <p className="text-xs text-gray-500">부서 지출</p>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 opacity-60">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-gray-600">성경 읽기</p>
+                    <p className="text-xs text-gray-400">준비 중</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 출석 체크 탭 */}
