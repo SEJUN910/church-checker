@@ -40,6 +40,11 @@ interface AttendanceRecord {
   created_at: string;
 }
 
+interface AttendanceData {
+  date: string;
+  count: number;
+}
+
 export default function ChurchDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -57,6 +62,9 @@ export default function ChurchDetailPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [isAdmin, setIsAdmin] = useState(false);
+  const [weeklyAttendance, setWeeklyAttendance] = useState<AttendanceData[]>([]);
+  const [monthlyAttendance, setMonthlyAttendance] = useState<AttendanceData[]>([]);
+  const [viewMode, setViewMode] = useState<'weekly' | 'monthly'>('weekly');
   const [showManagementMenu, setShowManagementMenu] = useState(() => {
     // localStorage에서 관리 메뉴 상태 불러오기
     if (typeof window !== 'undefined') {
@@ -89,6 +97,7 @@ export default function ChurchDetailPage() {
   useEffect(() => {
     loadData();
     checkUser();
+    loadAttendanceData();
   }, [churchId]);
 
   const checkUser = async () => {
@@ -124,6 +133,65 @@ export default function ChurchDetailPage() {
         .single();
 
       setIsAdmin(memberData?.role === 'admin' || memberData?.role === 'owner');
+    }
+  };
+
+  const loadAttendanceData = async () => {
+    try {
+      const today = new Date();
+
+      // 주간 데이터 (최근 7일)
+      const weeklyData: AttendanceData[] = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+
+        const { data, error } = await supabase
+          .from('attendance')
+          .select('student_id')
+          .eq('church_id', churchId)
+          .eq('date', dateStr);
+
+        if (error) throw error;
+
+        // 중복 제거
+        const uniqueStudents = new Set(data?.map(a => a.student_id) || []);
+        weeklyData.push({
+          date: dateStr,
+          count: uniqueStudents.size
+        });
+      }
+      setWeeklyAttendance(weeklyData);
+
+      // 월간 데이터 (최근 4주)
+      const monthlyData: AttendanceData[] = [];
+      for (let i = 3; i >= 0; i--) {
+        const endDate = new Date(today);
+        endDate.setDate(today.getDate() - (i * 7));
+        const startDate = new Date(endDate);
+        startDate.setDate(endDate.getDate() - 6);
+
+        const { data, error } = await supabase
+          .from('attendance')
+          .select('student_id')
+          .eq('church_id', churchId)
+          .gte('date', startDate.toISOString().split('T')[0])
+          .lte('date', endDate.toISOString().split('T')[0]);
+
+        if (error) throw error;
+
+        // 중복 제거
+        const uniqueStudents = new Set(data?.map(a => a.student_id) || []);
+        const weekLabel = `${startDate.getMonth() + 1}/${startDate.getDate()}`;
+        monthlyData.push({
+          date: weekLabel,
+          count: uniqueStudents.size
+        });
+      }
+      setMonthlyAttendance(monthlyData);
+    } catch (error) {
+      console.error('출석 데이터 로드 실패:', error);
     }
   };
 
@@ -577,6 +645,82 @@ export default function ChurchDetailPage() {
         {/* 출석 체크 탭 */}
         {activeTab === 'attendance' && (
           <div>
+            {/* 출석 현황 그래프 */}
+            {(weeklyAttendance.length > 0 || monthlyAttendance.length > 0) && (
+              <div className="mb-4 rounded-xl bg-white border border-gray-200 p-4">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-semibold text-gray-700">출석 현황</h3>
+                  <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                    <button
+                      onClick={() => setViewMode('weekly')}
+                      className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                        viewMode === 'weekly'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      주간
+                    </button>
+                    <button
+                      onClick={() => setViewMode('monthly')}
+                      className={`px-3 py-1 rounded-md text-xs font-semibold transition-all ${
+                        viewMode === 'monthly'
+                          ? 'bg-white text-blue-600 shadow-sm'
+                          : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                    >
+                      월간
+                    </button>
+                  </div>
+                </div>
+
+                {/* 그래프 */}
+                <div className="space-y-3">
+                  {(viewMode === 'weekly' ? weeklyAttendance : monthlyAttendance).map((item, index) => {
+                    const maxCount = Math.max(...(viewMode === 'weekly' ? weeklyAttendance : monthlyAttendance).map(d => d.count));
+                    const percentage = maxCount > 0 ? (item.count / maxCount) * 100 : 0;
+                    const date = new Date(item.date);
+                    const isToday = item.date === new Date().toISOString().split('T')[0];
+
+                    return (
+                      <div key={index} className="flex items-center gap-2">
+                        <div className="w-12 text-right">
+                          <span className={`text-[10px] ${isToday ? 'text-blue-600 font-bold' : 'text-gray-500'}`}>
+                            {viewMode === 'weekly'
+                              ? date.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' }).replace('. ', '/')
+                              : item.date}
+                          </span>
+                        </div>
+                        <div className="flex-1 flex items-center gap-2">
+                          <div className="flex-1 bg-gray-100 rounded-full h-6 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                isToday ? 'bg-blue-500' : 'bg-blue-400'
+                              }`}
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-bold text-gray-700 w-6 text-right">
+                            {item.count}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 총계 */}
+                <div className="mt-4 pt-3 border-t border-gray-200 flex items-center justify-between">
+                  <span className="text-xs text-gray-600">
+                    {viewMode === 'weekly' ? '주간' : '월간'} 총 출석
+                  </span>
+                  <span className="text-base font-bold text-blue-600">
+                    {(viewMode === 'weekly' ? weeklyAttendance : monthlyAttendance).reduce((sum, item) => sum + item.count, 0)}명
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* 날짜 및 필터 */}
             <div className="mb-3 space-y-2">
               <div className="rounded-lg bg-blue-50 px-3 py-2.5 border border-blue-100 flex items-center gap-2">
