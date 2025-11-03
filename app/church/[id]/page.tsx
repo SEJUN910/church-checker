@@ -541,6 +541,22 @@ export default function ChurchDetailPage() {
                 </div>
               </Link>
 
+              <Link href={`/church/${churchId}/announcements`}>
+                <div className="rounded-xl border border-gray-200 bg-white p-4 hover:border-indigo-300 hover:shadow-md transition-all">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center">
+                      <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
+                      </svg>
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-gray-900">공지사항</p>
+                      <p className="text-xs text-gray-500">공지 관리</p>
+                    </div>
+                  </div>
+                </div>
+              </Link>
+
               <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 opacity-60">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center">

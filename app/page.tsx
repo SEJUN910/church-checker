@@ -28,6 +28,16 @@ interface ChurchStats {
   thisWeekAttendance: number;
 }
 
+interface Announcement {
+  id: string;
+  church_id: string;
+  title: string;
+  content: string;
+  is_pinned: boolean;
+  is_important: boolean;
+  created_at: string;
+}
+
 export default function Home() {
   const router = useRouter();
   const [churches, setChurches] = useState<Church[]>([]);
@@ -40,6 +50,7 @@ export default function Home() {
   const [dailyVerse, setDailyVerse] = useState<{ text: string; reference: string } | null>(null);
   const [allWeeklyEvents, setAllWeeklyEvents] = useState<WeeklyEvent[]>([]);
   const [churchStats, setChurchStats] = useState<Map<string, ChurchStats>>(new Map());
+  const [recentAnnouncements, setRecentAnnouncements] = useState<Announcement[]>([]);
 
   const supabase = createClient();
 
@@ -52,6 +63,7 @@ export default function Home() {
     if (churches.length > 0) {
       loadAllWeeklyEvents();
       loadChurchStats();
+      loadRecentAnnouncements();
     }
   }, [churches]);
 
@@ -127,6 +139,25 @@ export default function Home() {
       setChurchStats(statsMap);
     } catch (error) {
       console.error('교회 통계 로드 실패:', error);
+    }
+  };
+
+  const loadRecentAnnouncements = async () => {
+    try {
+      const churchIds = churches.map(c => c.id);
+
+      const { data, error } = await supabase
+        .from('announcements')
+        .select('*')
+        .in('church_id', churchIds)
+        .order('is_pinned', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      if (error) throw error;
+      setRecentAnnouncements(data || []);
+    } catch (error) {
+      console.error('최근 공지 로드 실패:', error);
     }
   };
 
@@ -257,6 +288,62 @@ export default function Home() {
             <p className="text-xs font-semibold text-amber-700 text-right">
               - {dailyVerse.reference}
             </p>
+          </div>
+        )}
+
+        {/* 최근 공지사항 */}
+        {recentAnnouncements.length > 0 && (
+          <div className="mb-5 rounded-xl bg-white border border-gray-200 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-semibold text-gray-700">최근 공지</h3>
+              <span className="text-xs text-gray-500">{recentAnnouncements.length}개</span>
+            </div>
+            <div className="space-y-2">
+              {recentAnnouncements.map((announcement) => {
+                const church = churches.find(c => c.id === announcement.church_id);
+                return (
+                  <Link
+                    key={announcement.id}
+                    href={`/church/${announcement.church_id}/announcements`}
+                  >
+                    <div className={`p-3 rounded-lg border transition-all hover:border-blue-300 ${
+                      announcement.is_important ? 'bg-red-50 border-red-200' :
+                      announcement.is_pinned ? 'bg-blue-50 border-blue-200' :
+                      'bg-gray-50 border-gray-200'
+                    }`}>
+                      <div className="flex items-start gap-2 mb-1">
+                        {announcement.is_pinned && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-600 text-white">
+                            고정
+                          </span>
+                        )}
+                        {announcement.is_important && (
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-600 text-white">
+                            중요
+                          </span>
+                        )}
+                        <span className="text-xs font-semibold text-gray-900 flex-1 truncate">
+                          {announcement.title}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-600 line-clamp-2 mb-1">
+                        {announcement.content}
+                      </p>
+                      <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                        {church && <span>{church.name}</span>}
+                        <span>•</span>
+                        <span>
+                          {new Date(announcement.created_at).toLocaleDateString('ko-KR', {
+                            month: 'short',
+                            day: 'numeric'
+                          })}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
           </div>
         )}
 

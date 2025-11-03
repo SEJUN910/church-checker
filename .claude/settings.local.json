@@ -15,7 +15,8 @@
       "Bash(npm run build:*)",
       "Bash(cat:*)",
       "Bash(git checkout:*)",
-      "Bash(cmd /c taskkill /F /PID 29176)"
+      "Bash(cmd /c taskkill /F /PID 29176)",
+      "Bash(git add:*)"
     ],
     "deny": [],
     "ask": []
