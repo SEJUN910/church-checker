@@ -15,7 +15,7 @@ interface Member {
   profiles: {
     name: string;
     phone: string | null;
-  };
+  } | null;
 }
 
 export default function AdminManagementPage() {
@@ -327,7 +327,7 @@ export default function AdminManagementPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <p className="font-semibold text-gray-900">{(member.profiles as any)?.name || '이름 없음'}</p>
+                      <p className="font-semibold text-gray-900">{member.profiles?.name || '이름 없음'}</p>
                       {member.user_id === ownerId && (
                         <span className="px-2 py-0.5 rounded text-xs font-bold bg-yellow-500 text-white">
                           방장
@@ -361,7 +361,7 @@ export default function AdminManagementPage() {
                         </button>
                       )}
                       <button
-                        onClick={() => removeMember(member.id, (member.profiles as any)?.name)}
+                        onClick={() => removeMember(member.id, member.profiles?.name || '사용자')}
                         className="px-3 py-1.5 bg-red-100 text-red-700 text-xs font-bold rounded hover:bg-red-200 transition-colors"
                       >
                         제거
