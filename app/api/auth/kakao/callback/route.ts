@@ -50,18 +50,29 @@ export async function GET(request: Request) {
     // 카카오 ID를 사용하여 고유 이메일 생성 (이메일이 없을 경우)
     const email = userData.kakao_account?.email || `kakao_${userData.id}@kakao.local`;
     const name = userData.properties?.nickname || '카카오 사용자';
+    const password = `kakao_${userData.id}_${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`;
 
-    // Supabase Auth에 사용자 등록/로그인
+    // 먼저 프로필이 있는지 확인
+    const { data: existingProfile } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', userData.id)
+      .maybeSingle();
+
+    let userId: string;
+    let isNewUser = false;
+
+    // Supabase Auth에 사용자 등록/로그인 시도
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email,
-      password: `kakao_${userData.id}_${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+      password,
     });
 
-    // 사용자가 없으면 생성
     if (authError && authError.message.includes('Invalid login credentials')) {
+      // 신규 사용자 - 회원가입
       const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email,
-        password: `kakao_${userData.id}_${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+        password,
         options: {
           data: {
             name,
@@ -72,19 +83,44 @@ export async function GET(request: Request) {
       });
 
       if (signUpError) throw signUpError;
+      if (!signUpData.user) throw new Error('회원가입 실패');
+
+      userId = signUpData.user.id;
+      isNewUser = true;
 
       // 프로필 생성
-      if (signUpData.user) {
+      if (!existingProfile) {
         await supabase.from('profiles').insert({
-          id: signUpData.user.id,
+          id: userId,
           name,
           avatar_url: userData.properties?.profile_image,
         });
       }
+
+      // 회원가입 후 자동 로그인
+      await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+    } else if (authData?.user) {
+      // 기존 사용자 - 로그인 성공
+      userId = authData.user.id;
+
+      // 프로필이 없으면 생성
+      if (!existingProfile) {
+        await supabase.from('profiles').insert({
+          id: userId,
+          name,
+          avatar_url: userData.properties?.profile_image,
+        });
+      }
+    } else {
+      throw new Error('인증 실패');
     }
 
-    // 프로필 설정 페이지로 리다이렉트
-    return NextResponse.redirect(`${origin}/profile/setup`);
+    // 신규 사용자면 프로필 설정으로, 기존 사용자면 메인으로
+    const redirectPath = isNewUser || !existingProfile ? '/profile/setup' : '/';
+    return NextResponse.redirect(`${origin}${redirectPath}`);
   } catch (error) {
     console.error('Kakao auth error:', error);
     return NextResponse.redirect(`${origin}/login?error=${encodeURIComponent(error instanceof Error ? error.message : 'Unknown error')}`);
