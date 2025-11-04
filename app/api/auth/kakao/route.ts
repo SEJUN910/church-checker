@@ -7,7 +7,13 @@ export async function GET(request: Request) {
   // 카카오 OAuth URL 직접 생성 (account_email 제외)
   const kakaoAuthUrl = new URL('https://kauth.kakao.com/oauth/authorize');
 
-  kakaoAuthUrl.searchParams.set('client_id', process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY || 'cfd682402094edfc183ac980df7c55a0');
+  const clientId = process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY;
+
+  if (!clientId) {
+    return NextResponse.json({ error: 'KAKAO_REST_API_KEY not configured' }, { status: 500 });
+  }
+
+  kakaoAuthUrl.searchParams.set('client_id', clientId);
   kakaoAuthUrl.searchParams.set('redirect_uri', `${origin}/api/auth/kakao/callback`);
   kakaoAuthUrl.searchParams.set('response_type', 'code');
   // account_email 제외하고 scope 설정

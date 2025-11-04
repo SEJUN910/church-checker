@@ -11,6 +11,12 @@ export async function GET(request: Request) {
   }
 
   try {
+    const clientId = process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY;
+
+    if (!clientId) {
+      throw new Error('KAKAO_REST_API_KEY not configured');
+    }
+
     // 카카오 토큰 받기
     const tokenResponse = await fetch('https://kauth.kakao.com/oauth/token', {
       method: 'POST',
@@ -19,7 +25,7 @@ export async function GET(request: Request) {
       },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
-        client_id: process.env.NEXT_PUBLIC_KAKAO_REST_API_KEY || 'cfd682402094edfc183ac980df7c55a0',
+        client_id: clientId,
         redirect_uri: `${origin}/api/auth/kakao/callback`,
         code,
       }),
