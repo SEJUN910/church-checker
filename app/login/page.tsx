@@ -25,24 +25,9 @@ export default function LoginPage() {
     }
   };
 
-  const handleKakaoLogin = async () => {
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'kakao',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-          scopes: 'profile_nickname profile_image'
-        }
-      });
-
-      if (error) {
-        console.error('카카오 로그인 에러:', error);
-        alert('카카오 로그인에 실패했습니다.');
-      }
-    } catch (error) {
-      console.error('카카오 로그인 에러:', error);
-      alert('카카오 로그인에 실패했습니다.');
-    }
+  const handleKakaoLogin = () => {
+    // 직접 구현한 카카오 OAuth로 리다이렉트 (account_email 제외)
+    window.location.href = '/api/auth/kakao';
   };
 
   if (loading) {

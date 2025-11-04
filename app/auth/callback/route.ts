@@ -8,7 +8,13 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient();
-    await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+    if (error) {
+      console.error('Auth callback error:', error);
+      // 에러가 있어도 프로필 설정으로 이동 (이메일 없어도 진행)
+      return NextResponse.redirect(`${origin}/profile/setup?error=${error.message}`);
+    }
   }
 
   // 프로필 설정 페이지로 리다이렉트 (첫 로그인인 경우)
