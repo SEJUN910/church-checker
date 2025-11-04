@@ -32,6 +32,7 @@ export async function GET(request: Request) {
         client_id: clientId,
         redirect_uri: `${origin}/api/auth/kakao/callback`,
         code,
+        client_secret: process.env.NEXT_PUBLIC_KAKAO_CLIENT_SECRET_KEY!,
       }),
     });
 
