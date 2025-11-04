@@ -18,7 +18,9 @@
       "Bash(cmd /c taskkill /F /PID 29176)",
       "Bash(git add:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nAdd announcements feature and improve main page UI\n\n- Add announcements management system with CRUD operations\n- Create announcements database table with pinned/important flags\n- Display recent announcements on main page\n- Add weekly schedule summary on main page\n- Add church statistics (weekly attendance, total members)\n- Add quick action buttons for each church (attendance/prayer/calendar/offerings)\n- Update design system: reduce title sizes and boldness\n- Add visible border to management menu toggle\n- Remove standalone quick action buttons section\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
-      "Bash(git push)"
+      "Bash(git push)",
+      "Bash(cmd /c taskkill /F /PID 8988)",
+      "Bash(cmd /c taskkill /F /PID 6540)"
     ],
     "deny": [],
     "ask": []

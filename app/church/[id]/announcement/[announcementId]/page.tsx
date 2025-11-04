@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
+import toast from 'react-hot-toast';
 
 interface Announcement {
   id: string;
@@ -53,6 +54,11 @@ export default function AnnouncementDetailPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [currentUserInfo, setCurrentUserInfo] = useState<Student | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedAnnouncement, setEditedAnnouncement] = useState({
+    title: '',
+    content: ''
+  });
 
   const supabase = createClient();
 
@@ -63,17 +69,14 @@ export default function AnnouncementDetailPage() {
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    let currentUserId: string;
 
-    if (user) {
-      currentUserId = user.id;
-      setUserId(user.id);
-    } else {
-      const tempUserId = localStorage.getItem('tempUserId') || crypto.randomUUID();
-      localStorage.setItem('tempUserId', tempUserId);
-      currentUserId = tempUserId;
-      setUserId(tempUserId);
+    if (!user) {
+      router.push('/login');
+      return;
     }
+
+    const currentUserId = user.id;
+    setUserId(currentUserId);
 
     // 관리자 권한 확인
     const { data: churchData } = await supabase
@@ -197,6 +200,44 @@ export default function AnnouncementDetailPage() {
     }
   };
 
+  const startEditing = () => {
+    if (!announcement) return;
+    setEditedAnnouncement({
+      title: announcement.title,
+      content: announcement.content
+    });
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!announcement) return;
+
+    try {
+      const { error } = await supabase
+        .from('announcements')
+        .update({
+          title: editedAnnouncement.title,
+          content: editedAnnouncement.content,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', announcementId);
+
+      if (error) throw error;
+
+      setAnnouncement({
+        ...announcement,
+        title: editedAnnouncement.title,
+        content: editedAnnouncement.content,
+        updated_at: new Date().toISOString()
+      });
+      setIsEditing(false);
+      toast.success('공지사항이 수정되었습니다 ✏️');
+    } catch (error) {
+      console.error('공지사항 수정 실패:', error);
+      toast.error('공지사항 수정에 실패했습니다.');
+    }
+  };
+
   if (loading) {
     return <LoadingSpinner />;
   }
@@ -237,24 +278,77 @@ export default function AnnouncementDetailPage() {
       <div className="mx-auto max-w-md px-5 pt-20">
         {/* 공지사항 본문 */}
         <div className="mb-6 rounded-2xl bg-white border border-gray-200 p-6">
-          <div className="mb-4">
-            <h1 className="text-2xl font-extrabold text-gray-900 mb-3">
-              {announcement.title}
-            </h1>
-            <p className="text-xs text-gray-400">
-              {new Date(announcement.created_at).toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit'
-              })}
-            </p>
+          <div className="mb-4 flex items-start justify-between">
+            <div className="flex-1">
+              {isEditing ? (
+                <div className="space-y-3">
+                  <div>
+                    <label className="mb-2 block text-sm font-bold text-gray-900">제목</label>
+                    <input
+                      type="text"
+                      value={editedAnnouncement.title}
+                      onChange={(e) => setEditedAnnouncement({ ...editedAnnouncement, title: e.target.value })}
+                      className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-2 block text-sm font-bold text-gray-900">내용</label>
+                    <textarea
+                      value={editedAnnouncement.content}
+                      onChange={(e) => setEditedAnnouncement({ ...editedAnnouncement, content: e.target.value })}
+                      className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none resize-none"
+                      rows={6}
+                      required
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setIsEditing(false)}
+                      className="flex-1 rounded-full border-2 border-gray-300 py-2.5 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-all"
+                    >
+                      취소
+                    </button>
+                    <button
+                      onClick={handleSaveEdit}
+                      className="flex-1 rounded-full bg-blue-600 py-2.5 text-sm font-bold text-white hover:bg-blue-700 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.4)]"
+                    >
+                      저장
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <h1 className="text-2xl font-extrabold text-gray-900 mb-3">
+                    {announcement.title}
+                  </h1>
+                  <p className="text-xs text-gray-400">
+                    {new Date(announcement.created_at).toLocaleDateString('ko-KR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                </>
+              )}
+            </div>
+            {!isEditing && isAdmin && (
+              <button
+                onClick={startEditing}
+                className="ml-auto text-sm text-blue-600 hover:text-blue-700 font-semibold transition-colors"
+              >
+                ✏️ 수정
+              </button>
+            )}
           </div>
 
-          <p className="text-base text-gray-700 whitespace-pre-wrap leading-relaxed">
-            {announcement.content}
-          </p>
+          {!isEditing && (
+            <p className="text-base text-gray-700 whitespace-pre-wrap leading-relaxed">
+              {announcement.content}
+            </p>
+          )}
         </div>
 
         {/* 댓글 섹션 */}
@@ -315,31 +409,23 @@ export default function AnnouncementDetailPage() {
             </div>
           )}
 
-          {/* 댓글 작성 (관리자만) */}
-          {isAdmin ? (
-            <form onSubmit={handleAddComment} className="rounded-2xl border border-gray-200 bg-white p-4">
-              <textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none resize-none mb-3"
-                placeholder="댓글을 입력하세요..."
-                rows={3}
-                required
-              />
-              <button
-                type="submit"
-                className="w-full rounded-full bg-blue-600 py-3 text-sm font-bold text-white hover:bg-blue-700 active:scale-95 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.4)]"
-              >
-                댓글 작성
-              </button>
-            </form>
-          ) : (
-            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4 text-center">
-              <p className="text-sm text-gray-500">
-                관리자만 댓글을 작성할 수 있습니다
-              </p>
-            </div>
-          )}
+          {/* 댓글 작성 */}
+          <form onSubmit={handleAddComment} className="rounded-2xl border border-gray-200 bg-white p-4">
+            <textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none resize-none mb-3"
+              placeholder="댓글을 입력하세요..."
+              rows={3}
+              required
+            />
+            <button
+              type="submit"
+              className="w-full rounded-full bg-blue-600 py-3 text-sm font-bold text-white hover:bg-blue-700 active:scale-95 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.4)]"
+            >
+              댓글 작성
+            </button>
+          </form>
         </div>
       </div>
     </div>

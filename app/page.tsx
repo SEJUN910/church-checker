@@ -163,22 +163,23 @@ export default function Home() {
 
   const checkUser = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      setUserId(user.id);
-      setUserName(user.user_metadata?.name || '사용자');
-      loadChurches();
-    } else {
-      const tempUserId = localStorage.getItem('tempUserId');
-      const tempUserName = localStorage.getItem('tempUserName');
 
-      if (tempUserId && tempUserName) {
-        setUserId(tempUserId);
-        setUserName(tempUserName);
-        loadChurches();
-      } else {
-        router.push('/login');
-      }
+    if (!user) {
+      router.push('/login');
+      return;
     }
+
+    setUserId(user.id);
+
+    // 프로필에서 이름 가져오기
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('name')
+      .eq('id', user.id)
+      .single();
+
+    setUserName(profile?.name || user.user_metadata?.name || '사용자');
+    loadChurches();
   };
 
 

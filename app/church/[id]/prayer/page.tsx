@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import Link from 'next/link';
 
@@ -29,6 +29,7 @@ interface Student {
 
 export default function PrayerPage() {
   const params = useParams();
+  const router = useRouter();
   const churchId = params.id as string;
   const supabase = createClient();
 
@@ -39,6 +40,7 @@ export default function PrayerPage() {
   const [showTestimonyModal, setShowTestimonyModal] = useState(false);
   const [selectedPrayer, setSelectedPrayer] = useState<PrayerRequest | null>(null);
   const [testimony, setTestimony] = useState('');
+  const [userId, setUserId] = useState<string | null>(null);
 
   const [newPrayer, setNewPrayer] = useState({
     title: '',
@@ -48,8 +50,20 @@ export default function PrayerPage() {
   });
 
   useEffect(() => {
-    loadData();
+    checkUserAndLoadData();
   }, []);
+
+  const checkUserAndLoadData = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+
+    setUserId(user.id);
+    loadData();
+  };
 
   const loadData = async () => {
     try {
@@ -99,7 +113,6 @@ export default function PrayerPage() {
   const handleCreatePrayer = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const userId = localStorage.getItem('tempUserId');
     if (!userId) {
       alert('로그인이 필요합니다.');
       return;
