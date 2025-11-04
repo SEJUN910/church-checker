@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
+import toast, { Toaster } from 'react-hot-toast';
 
 interface Church {
   id: string;
@@ -51,6 +52,9 @@ export default function Home() {
   const [allWeeklyEvents, setAllWeeklyEvents] = useState<WeeklyEvent[]>([]);
   const [churchStats, setChurchStats] = useState<Map<string, ChurchStats>>(new Map());
   const [recentAnnouncements, setRecentAnnouncements] = useState<Announcement[]>([]);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingChurch, setEditingChurch] = useState<Church | null>(null);
 
   const supabase = createClient();
 
@@ -59,13 +63,24 @@ export default function Home() {
     loadDailyVerse();
   }, []);
 
+  // 팝다운 메뉴 외부 클릭 시 닫기
   useEffect(() => {
-    if (churches.length > 0) {
-      loadAllWeeklyEvents();
-      loadChurchStats();
-      loadRecentAnnouncements();
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      // 메뉴 컨테이너 외부 클릭 시에만 닫기
+      if (!target.closest('.church-menu-container')) {
+        setOpenMenuId(null);
+      }
+    };
+
+    if (openMenuId) {
+      document.addEventListener('mousedown', handleClickOutside);
     }
-  }, [churches]);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [openMenuId]);
 
   const loadDailyVerse = async () => {
     try {
@@ -99,11 +114,11 @@ export default function Home() {
     }
   };
 
-  const loadChurchStats = async () => {
+  const loadChurchStats = async (churchList: Church[] = churches) => {
     try {
       const statsMap = new Map<string, ChurchStats>();
 
-      for (const church of churches) {
+      for (const church of churchList) {
         // 총 학생 수
         const { data: students, error: studentsError } = await supabase
           .from('students')
@@ -142,9 +157,9 @@ export default function Home() {
     }
   };
 
-  const loadRecentAnnouncements = async () => {
+  const loadRecentAnnouncements = async (churchList: Church[] = churches) => {
     try {
-      const churchIds = churches.map(c => c.id);
+      const churchIds = churchList.map(c => c.id);
 
       const { data, error } = await supabase
         .from('announcements')
@@ -179,19 +194,53 @@ export default function Home() {
       .single();
 
     setUserName(profile?.name || user.user_metadata?.name || '사용자');
-    loadChurches();
+
+    // userId를 직접 전달하여 state 업데이트 타이밍 문제 해결
+    loadChurches(user.id);
   };
 
 
-  const loadChurches = async () => {
+  const loadChurches = async (currentUserId?: string) => {
     try {
+      const userIdToUse = currentUserId || userId;
+      if (!userIdToUse) return;
+
+      // church_members 테이블을 통해 사용자가 속한 교회만 가져오기
       const { data, error } = await supabase
-        .from('churches')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .from('church_members')
+        .select(`
+          church_id,
+          role,
+          churches (
+            id,
+            name,
+            description,
+            owner_id,
+            created_at
+          )
+        `)
+        .eq('user_id', userIdToUse)
+        .order('joined_at', { ascending: false });
 
       if (error) throw error;
-      setChurches(data || []);
+
+      // churches 데이터를 추출하여 Church 타입으로 변환
+      const userChurches = data?.map((item: any) => ({
+        id: item.churches.id,
+        name: item.churches.name,
+        description: item.churches.description,
+        owner_id: item.churches.owner_id,
+        created_at: item.churches.created_at
+      })).filter((church: any) => church.id) || [];
+
+      setChurches(userChurches);
+
+      // 교회 목록이 로드된 후 관련 데이터 로드 (한 번만 실행)
+      if (userChurches.length > 0) {
+        loadAllWeeklyEvents();
+        loadChurchStats(userChurches);
+        loadRecentAnnouncements(userChurches);
+      }
     } catch (error) {
       console.error('교회 목록 로드 실패:', error);
       alert('교회 목록을 불러오는데 실패했습니다.');
@@ -205,6 +254,7 @@ export default function Home() {
     if (!newChurchName.trim() || !userId) return;
 
     try {
+      // 1. 교회 생성
       const { data, error } = await supabase
         .from('churches')
         .insert([
@@ -217,15 +267,67 @@ export default function Home() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('교회 생성 실패:', error);
+        toast.error(`교회 생성 실패: ${error.message}`);
+        throw error;
+      }
+
+      // 2. 생성자를 church_members에 admin으로 추가
+      const { error: memberError } = await supabase
+        .from('church_members')
+        .insert([
+          {
+            church_id: data.id,
+            user_id: userId,
+            role: 'admin'
+          }
+        ]);
+
+      if (memberError) {
+        console.error('멤버 추가 실패:', memberError);
+        toast.error(`멤버 추가 실패: ${memberError.message}`);
+        // 교회는 생성되었지만 멤버 추가 실패 - 교회 삭제
+        await supabase.from('churches').delete().eq('id', data.id);
+        throw memberError;
+      }
 
       setChurches([data, ...churches]);
       setNewChurchName('');
       setNewChurchDesc('');
       setShowCreateModal(false);
-    } catch (error) {
-      console.error('교회 생성 실패:', error);
-      alert('교회를 생성하는데 실패했습니다.');
+      toast.success('교회가 생성되었습니다!');
+    } catch (error: any) {
+      console.error('교회 생성 프로세스 실패:', error);
+      // 에러는 이미 위에서 alert 했으므로 여기서는 로그만
+    }
+  };
+
+  const handleEditChurch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingChurch) return;
+
+    try {
+      const { error } = await supabase
+        .from('churches')
+        .update({
+          name: editingChurch.name,
+          description: editingChurch.description
+        })
+        .eq('id', editingChurch.id);
+
+      if (error) {
+        console.error('교회 수정 실패:', error);
+        toast.error(`교회 수정 실패: ${error.message}`);
+        throw error;
+      }
+
+      setChurches(churches.map(c => c.id === editingChurch.id ? editingChurch : c));
+      setShowEditModal(false);
+      setEditingChurch(null);
+      toast.success('교회 정보가 수정되었습니다!');
+    } catch (error: any) {
+      console.error('교회 수정 프로세스 실패:', error);
     }
   };
 
@@ -241,9 +343,11 @@ export default function Home() {
       if (error) throw error;
 
       setChurches(churches.filter(church => church.id !== id));
+      toast.success('교회가 삭제되었습니다.');
+      setOpenMenuId(null);
     } catch (error) {
       console.error('교회 삭제 실패:', error);
-      alert('교회를 삭제하는데 실패했습니다.');
+      toast.error('교회를 삭제하는데 실패했습니다.');
     }
   };
 
@@ -253,6 +357,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Toaster position="top-center" />
       {/* 상단 헤더 */}
       <div className="bg-white border-b border-gray-200">
         <div className="mx-auto max-w-md px-5 py-3">
@@ -423,18 +528,55 @@ export default function Home() {
                           </div>
                         </div>
                       </Link>
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          handleDeleteChurch(church.id);
-                        }}
-                        className="ml-2 rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                      </button>
+
+                      {/* 팝다운 메뉴 */}
+                      <div className="relative church-menu-container">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setOpenMenuId(openMenuId === church.id ? null : church.id);
+                          }}
+                          className="ml-2 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                        >
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
+                          </svg>
+                        </button>
+
+                        {openMenuId === church.id && (
+                          <div className="absolute right-0 top-8 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10 min-w-[120px]">
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setEditingChurch(church);
+                                setShowEditModal(true);
+                                setOpenMenuId(null);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                              </svg>
+                              수정
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleDeleteChurch(church.id);
+                              }}
+                              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                              삭제
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     {/* 통계 정보 */}
@@ -509,8 +651,14 @@ export default function Home() {
 
       {/* 생성 모달 - 토스 스타일 */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/20 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-t-3xl bg-white p-6 pb-8 animate-slide-up">
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/20 backdrop-blur-sm"
+          onClick={() => setShowCreateModal(false)}
+        >
+          <div
+            className="w-full max-w-md rounded-t-3xl bg-white p-6 pb-8 animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="mb-6">
               <h2 className="text-2xl font-extrabold text-gray-900 mb-1">
                 새 교회 만들기
@@ -565,6 +713,97 @@ export default function Home() {
                   className="flex-1 rounded-full bg-blue-600 py-3.5 text-base font-bold text-white hover:bg-blue-700 active:scale-95 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.4)]"
                 >
                   만들기
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 교회 수정 모달 */}
+      {showEditModal && editingChurch && (
+        <div
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/20 backdrop-blur-sm"
+          onClick={() => {
+            setShowEditModal(false);
+            setEditingChurch(null);
+          }}
+        >
+          <div
+            className="w-full max-w-md rounded-t-3xl bg-white p-6 pb-8 animate-slide-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900">모임 수정</h3>
+              <button
+                onClick={() => {
+                  setShowEditModal(false);
+                  setEditingChurch(null);
+                }}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleEditChurch} className="space-y-4">
+              <div>
+                <label className="mb-2 block text-sm font-bold text-gray-900">
+                  이름
+                </label>
+                <input
+                  type="text"
+                  value={editingChurch.name}
+                  onChange={(e) => setEditingChurch({...editingChurch, name: e.target.value})}
+                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base font-semibold text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
+                  placeholder="예: 사랑의교회 청소년부"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-bold text-gray-900">
+                  설명 (선택)
+                </label>
+                <textarea
+                  value={editingChurch.description || ''}
+                  onChange={(e) => setEditingChurch({...editingChurch, description: e.target.value})}
+                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none resize-none"
+                  placeholder="간단한 설명을 입력하세요"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-bold text-gray-900">
+                  생성일
+                </label>
+                <input
+                  type="text"
+                  value={new Date(editingChurch.created_at).toLocaleDateString('ko-KR')}
+                  disabled
+                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-500 bg-gray-50"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowEditModal(false);
+                    setEditingChurch(null);
+                  }}
+                  className="flex-1 rounded-full border-2 border-gray-200 py-3.5 text-base font-bold text-gray-700 hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
+                >
+                  취소
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 rounded-full bg-blue-600 py-3.5 text-base font-bold text-white hover:bg-blue-700 active:scale-95 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.4)]"
+                >
+                  수정
                 </button>
               </div>
             </form>

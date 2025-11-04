@@ -29,29 +29,28 @@ export default function Announcements({ churchId, userId, isAdmin, onRefresh }: 
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
 
-  const supabase = createClient()
-
   useEffect(() => {
+    const supabase = createClient()
+    const loadAnnouncements = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('announcements')
+          .select('*')
+          .eq('church_id', churchId)
+          .order('is_pinned', { ascending: false })
+          .order('created_at', { ascending: false })
+
+        if (error) throw error
+        setAnnouncements(data || [])
+      } catch (error) {
+        console.error('공지사항 로드 실패:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
     loadAnnouncements()
   }, [churchId])
-
-  const loadAnnouncements = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('announcements')
-        .select('*')
-        .eq('church_id', churchId)
-        .order('is_pinned', { ascending: false })
-        .order('created_at', { ascending: false })
-
-      if (error) throw error
-      setAnnouncements(data || [])
-    } catch (error) {
-      console.error('공지사항 로드 실패:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
 
 
   if (loading) {

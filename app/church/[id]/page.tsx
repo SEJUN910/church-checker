@@ -125,7 +125,6 @@ export default function ChurchDetailPage() {
     category: '일반',
     is_pinned: false
   });
-  const [announcementKey, setAnnouncementKey] = useState(0);
   const [showAttendanceModal, setShowAttendanceModal] = useState(false);
   const [attendanceModalType, setAttendanceModalType] = useState<'student' | 'teacher'>('student');
 
@@ -162,7 +161,7 @@ export default function ChurchDetailPage() {
     const currentUserId = user.id;
     setUserId(currentUserId);
 
-    // 관리자 권한 확인 (교회 owner 또는 admin 역할)
+    // 1. 교회 owner인지 확인
     const { data: churchData } = await supabase
       .from('churches')
       .select('owner_id')
@@ -170,18 +169,46 @@ export default function ChurchDetailPage() {
       .single();
 
     if (churchData?.owner_id === currentUserId) {
+      // owner는 자동으로 admin 권한
       setIsAdmin(true);
-    } else {
-      // church_members에서 역할 확인
-      const { data: memberData } = await supabase
+
+      // church_members에 없으면 추가
+      const { data: existingMember } = await supabase
         .from('church_members')
-        .select('role')
+        .select('id')
         .eq('church_id', churchId)
         .eq('user_id', currentUserId)
         .single();
 
-      setIsAdmin(memberData?.role === 'admin' || memberData?.role === 'owner');
+      if (!existingMember) {
+        await supabase
+          .from('church_members')
+          .insert([{
+            church_id: churchId,
+            user_id: currentUserId,
+            role: 'admin'
+          }]);
+      }
+      return;
     }
+
+    // 2. church_members에서 멤버십 및 역할 확인
+    const { data: memberData } = await supabase
+      .from('church_members')
+      .select('role')
+      .eq('church_id', churchId)
+      .eq('user_id', currentUserId)
+      .single();
+
+    // 멤버가 아니면 메인 페이지로 리다이렉트
+    if (!memberData) {
+      alert('이 교회에 접근 권한이 없습니다.');
+      router.push('/');
+      return;
+    }
+
+    // 관리자 권한 확인
+    setIsAdmin(memberData.role === 'admin');
   };
 
   // 팝다운 메뉴 밖 클릭 시 닫기
@@ -307,7 +334,6 @@ export default function ChurchDetailPage() {
         category: '일반',
         is_pinned: false
       });
-      setAnnouncementKey(prev => prev + 1); // 공지사항 컴포넌트 새로고침
       toast.success('공지사항이 등록되었습니다 📢');
     } catch (error) {
       console.error('공지사항 생성 실패:', error);
@@ -364,23 +390,46 @@ export default function ChurchDetailPage() {
     try {
       const today = new Date();
 
-      // 주간 데이터 (최근 7일)
+      // 필요한 날짜 범위 계산
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(today.getDate() - 6);
+
+      const currentDayOfWeek = today.getDay();
+      const thisWeekStart = new Date(today);
+      thisWeekStart.setDate(today.getDate() - currentDayOfWeek);
+      const fourWeeksAgo = new Date(thisWeekStart);
+      fourWeeksAgo.setDate(thisWeekStart.getDate() - 21);
+
+      // 전체 기간의 출석 데이터를 한 번에 가져오기 (4주 전부터 오늘까지)
+      const startDate = fourWeeksAgo.toISOString().split('T')[0];
+      const endDate = today.toISOString().split('T')[0];
+
+      const { data: allAttendance, error } = await supabase
+        .from('attendance')
+        .select('student_id, date')
+        .eq('church_id', churchId)
+        .gte('date', startDate)
+        .lte('date', endDate);
+
+      if (error) throw error;
+
+      // 날짜별로 그룹화
+      const attendanceByDate = new Map<string, Set<string>>();
+      allAttendance?.forEach(record => {
+        if (!attendanceByDate.has(record.date)) {
+          attendanceByDate.set(record.date, new Set());
+        }
+        attendanceByDate.get(record.date)!.add(record.student_id);
+      });
+
+      // 주간 데이터 (최근 7일) - 클라이언트에서 처리
       const weeklyData: AttendanceData[] = [];
       for (let i = 6; i >= 0; i--) {
         const date = new Date(today);
         date.setDate(today.getDate() - i);
         const dateStr = date.toISOString().split('T')[0];
 
-        const { data, error } = await supabase
-          .from('attendance')
-          .select('student_id')
-          .eq('church_id', churchId)
-          .eq('date', dateStr);
-
-        if (error) throw error;
-
-        // 중복 제거
-        const uniqueStudents = new Set(data?.map(a => a.student_id) || []);
+        const uniqueStudents = attendanceByDate.get(dateStr) || new Set();
         weeklyData.push({
           date: dateStr,
           count: uniqueStudents.size
@@ -388,32 +437,26 @@ export default function ChurchDetailPage() {
       }
       setWeeklyAttendance(weeklyData);
 
-      // 월간 데이터 (이번 주 포함 4주) - 주간 총 출석 수
+      // 월간 데이터 (이번 주 포함 4주) - 클라이언트에서 처리
       const monthlyData: AttendanceData[] = [];
 
-      // 이번 주의 시작일 (일요일) 계산
-      const currentDayOfWeek = today.getDay(); // 0 = 일요일
-      const thisWeekStart = new Date(today);
-      thisWeekStart.setDate(today.getDate() - currentDayOfWeek);
-
-      // 이번 주 포함 4주 (지난 3주 + 이번 주)
       for (let i = 3; i >= 0; i--) {
         const weekStart = new Date(thisWeekStart);
         weekStart.setDate(thisWeekStart.getDate() - (i * 7));
         const weekEnd = new Date(weekStart);
         weekEnd.setDate(weekStart.getDate() + 6);
 
-        const { data, error } = await supabase
-          .from('attendance')
-          .select('id')
-          .eq('church_id', churchId)
-          .gte('date', weekStart.toISOString().split('T')[0])
-          .lte('date', weekEnd.toISOString().split('T')[0]);
+        const weekStartStr = weekStart.toISOString().split('T')[0];
+        const weekEndStr = weekEnd.toISOString().split('T')[0];
 
-        if (error) throw error;
+        // 해당 주의 모든 출석 수 계산
+        let totalCount = 0;
+        allAttendance?.forEach(record => {
+          if (record.date >= weekStartStr && record.date <= weekEndStr) {
+            totalCount++;
+          }
+        });
 
-        // 총 출석 수 (중복 포함)
-        const totalCount = data?.length || 0;
         const weekLabel = `${weekStart.getMonth() + 1}/${weekStart.getDate()}`;
         monthlyData.push({
           date: weekLabel,
@@ -816,6 +859,22 @@ export default function ChurchDetailPage() {
                       </div>
                     </div>
                   </Link>
+
+                  {isAdmin && (
+                    <Link href={`/church/${churchId}/admins`}>
+                      <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-all cursor-pointer">
+                        <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
+                          <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-gray-900">관리자 관리</p>
+                          <p className="text-xs text-gray-500">멤버 초대</p>
+                        </div>
+                      </div>
+                    </Link>
+                  )}
 
                   <Link href={`/church/${churchId}/offerings`}>
                     <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-all cursor-pointer">
@@ -1317,7 +1376,6 @@ export default function ChurchDetailPage() {
         {/* 공지사항 탭 */}
         {activeTab === 'announcements' && (
           <Announcements
-            key={announcementKey}
             churchId={churchId}
             userId={userId}
             isAdmin={isAdmin}

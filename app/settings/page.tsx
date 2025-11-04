@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
+import toast, { Toaster } from 'react-hot-toast';
 
 export default function SettingsPage() {
   const router = useRouter();
@@ -31,17 +32,33 @@ export default function SettingsPage() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     if (confirm('로그아웃 하시겠습니까?')) {
-      localStorage.removeItem('tempUserId');
-      localStorage.removeItem('tempUserName');
-      localStorage.removeItem('showManagementMenu');
-      router.push('/login');
+      try {
+        // Supabase 로그아웃
+        await supabase.auth.signOut();
+
+        // localStorage 정리
+        localStorage.removeItem('tempUserId');
+        localStorage.removeItem('tempUserName');
+        localStorage.removeItem('showManagementMenu');
+
+        toast.success('로그아웃되었습니다.');
+
+        // 로그인 페이지로 이동
+        setTimeout(() => {
+          router.push('/login');
+        }, 500);
+      } catch (error) {
+        console.error('로그아웃 실패:', error);
+        toast.error('로그아웃에 실패했습니다.');
+      }
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <Toaster position="top-center" />
       {/* 헤더 */}
       <div className="bg-white border-b border-gray-200">
         <div className="mx-auto max-w-md px-5 py-4">
@@ -113,7 +130,7 @@ export default function SettingsPage() {
                 onClick={() => {
                   if (confirm('로컬 캐시를 삭제하시겠습니까?\n관리 메뉴 상태 등이 초기화됩니다.')) {
                     localStorage.removeItem('showManagementMenu');
-                    alert('캐시가 삭제되었습니다.');
+                    toast.success('캐시가 삭제되었습니다.');
                   }
                 }}
                 className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors text-left"
