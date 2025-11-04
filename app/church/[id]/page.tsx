@@ -2018,7 +2018,10 @@ export default function ChurchDetailPage() {
                               return (
                                 <button
                                   key={student.id}
-                                  onClick={() => toast.info(`${student.name}님은 오늘 출석 요일이 아닙니다.\n인원 관리에서 출석 요일을 변경할 수 있습니다.`, { duration: 3000 })}
+                                  onClick={() => toast(`${student.name}님은 오늘 출석 요일이 아닙니다.\n인원 관리에서 출석 요일을 변경할 수 있습니다.`, {
+                                    icon: 'ℹ️',
+                                    duration: 3000
+                                  })}
                                   className="relative rounded-2xl p-4 bg-gray-50 opacity-60 cursor-not-allowed"
                                   title={`이번 달: ${stats.thisMonthAttendance}회 | 출석률: ${stats.attendanceRate}%`}
                                 >

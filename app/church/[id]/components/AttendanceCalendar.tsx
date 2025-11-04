@@ -16,8 +16,8 @@ interface Student {
   name: string
   type: string
   photo_url?: string | null
-  grade?: string
-  age?: string
+  grade?: string | null
+  age?: number | null
 }
 
 interface AttendanceCalendarProps {
