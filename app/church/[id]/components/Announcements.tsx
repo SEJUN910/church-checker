@@ -15,6 +15,9 @@ interface Announcement {
   is_pinned?: boolean
   category?: string
   pinned_at?: string
+  image_url?: string | null
+  read_by_current_user?: boolean
+  read_count?: number
 }
 
 interface AnnouncementsProps {
@@ -41,7 +44,36 @@ export default function Announcements({ churchId, userId, isAdmin, onRefresh }: 
           .order('created_at', { ascending: false })
 
         if (error) throw error
-        setAnnouncements(data || [])
+
+        // 각 공지사항의 읽음 상태와 읽은 사람 수 가져오기
+        if (userId && data) {
+          const announcementsWithReadStatus = await Promise.all(
+            data.map(async (announcement) => {
+              // 현재 사용자의 읽음 상태 확인
+              const { data: readData } = await supabase
+                .from('announcement_reads')
+                .select('id')
+                .eq('announcement_id', announcement.id)
+                .eq('user_id', userId)
+                .single()
+
+              // 총 읽은 사람 수
+              const { count: readCount } = await supabase
+                .from('announcement_reads')
+                .select('*', { count: 'exact', head: true })
+                .eq('announcement_id', announcement.id)
+
+              return {
+                ...announcement,
+                read_by_current_user: !!readData,
+                read_count: readCount || 0
+              }
+            })
+          )
+          setAnnouncements(announcementsWithReadStatus)
+        } else {
+          setAnnouncements(data || [])
+        }
       } catch (error) {
         console.error('공지사항 로드 실패:', error)
       } finally {
@@ -50,7 +82,21 @@ export default function Announcements({ churchId, userId, isAdmin, onRefresh }: 
     }
 
     loadAnnouncements()
-  }, [churchId])
+  }, [churchId, userId])
+
+  const handleAnnouncementClick = async (announcement: Announcement) => {
+    // 읽음 표시
+    if (userId && !announcement.read_by_current_user) {
+      const supabase = createClient()
+      await supabase
+        .from('announcement_reads')
+        .insert([{
+          announcement_id: announcement.id,
+          user_id: userId
+        }])
+    }
+    router.push(`/church/${churchId}/announcement/${announcement.id}`)
+  }
 
 
   if (loading) {
@@ -100,9 +146,11 @@ export default function Announcements({ churchId, userId, isAdmin, onRefresh }: 
               className={`rounded-xl border p-4 hover:shadow-md transition-all cursor-pointer ${
                 announcement.is_pinned
                   ? 'border-yellow-300 bg-gradient-to-r from-yellow-50 to-orange-50'
-                  : 'border-gray-200 bg-white hover:border-blue-300'
+                  : announcement.read_by_current_user
+                  ? 'border-gray-200 bg-gray-50 hover:border-blue-300'
+                  : 'border-blue-200 bg-white hover:border-blue-400'
               }`}
-              onClick={() => router.push(`/church/${churchId}/announcement/${announcement.id}`)}
+              onClick={() => handleAnnouncementClick(announcement)}
             >
               <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">
@@ -110,6 +158,11 @@ export default function Announcements({ churchId, userId, isAdmin, onRefresh }: 
                     {announcement.is_pinned && (
                       <span className="px-2 py-1 rounded-full text-xs font-bold bg-yellow-500 text-white flex items-center gap-1">
                         📌 고정
+                      </span>
+                    )}
+                    {!announcement.read_by_current_user && (
+                      <span className="px-2 py-1 rounded-full text-xs font-bold bg-red-500 text-white flex items-center gap-1">
+                        NEW
                       </span>
                     )}
                     {announcement.category && (
@@ -120,8 +173,15 @@ export default function Announcements({ churchId, userId, isAdmin, onRefresh }: 
                     <span className="text-xs text-gray-400">
                       {new Date(announcement.created_at).toLocaleDateString('ko-KR')}
                     </span>
+                    {announcement.read_count !== undefined && announcement.read_count > 0 && (
+                      <span className="text-xs text-gray-400">
+                        👁️ {announcement.read_count}명 읽음
+                      </span>
+                    )}
                   </div>
-                  <h4 className="text-sm font-bold text-gray-900 mb-1">{announcement.title}</h4>
+                  <h4 className={`text-sm mb-1 ${announcement.read_by_current_user ? 'font-medium text-gray-700' : 'font-bold text-gray-900'}`}>
+                    {announcement.title}
+                  </h4>
                   <p className="text-xs text-gray-600 line-clamp-2">{announcement.content}</p>
                 </div>
                 <svg className="w-5 h-5 text-gray-400 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">

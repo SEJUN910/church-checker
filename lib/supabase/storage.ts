@@ -100,3 +100,138 @@ export function createImagePreview(file: File): string {
 export function revokeImagePreview(url: string): void {
   URL.revokeObjectURL(url)
 }
+
+/**
+ * 프로필 사진을 Supabase Storage에 업로드
+ * @param userId - 사용자 ID
+ * @param file - 업로드할 이미지 파일
+ * @returns 업로드된 이미지의 public URL
+ */
+export async function uploadProfilePhoto(
+  userId: string,
+  file: File
+): Promise<string | null> {
+  try {
+    const supabase = createClient()
+
+    // 파일 확장자 추출
+    const fileExt = file.name.split('.').pop()
+    // 파일명: profiles/{user_id}.{ext}
+    const filePath = `profiles/${userId}.${fileExt}`
+
+    console.log('Uploading profile photo to:', filePath)
+
+    // 기존 파일이 있으면 삭제
+    await supabase.storage.from('avatars').remove([filePath])
+
+    // 새 파일 업로드
+    const { data, error } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true,
+      })
+
+    if (error) {
+      console.error('Profile photo upload error:', error)
+      return null
+    }
+
+    console.log('Profile photo upload successful:', data)
+
+    // Public URL 생성
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from('avatars').getPublicUrl(data.path)
+
+    console.log('Profile photo public URL:', publicUrl)
+
+    return publicUrl
+  } catch (error) {
+    console.error('Error uploading profile photo:', error)
+    return null
+  }
+}
+
+/**
+ * 공지사항 이미지를 Supabase Storage에 업로드
+ * @param churchId - 교회 ID
+ * @param announcementId - 공지사항 ID
+ * @param file - 업로드할 이미지 파일
+ * @returns 업로드된 이미지의 public URL
+ */
+export async function uploadAnnouncementImage(
+  churchId: string,
+  announcementId: string,
+  file: File
+): Promise<string | null> {
+  try {
+    const supabase = createClient()
+
+    // 파일 확장자 추출
+    const fileExt = file.name.split('.').pop()
+    // 파일명: {church_id}/{announcement_id}.{ext}
+    const filePath = `${churchId}/${announcementId}.${fileExt}`
+
+    console.log('Uploading announcement image to:', filePath)
+
+    // 기존 파일이 있으면 삭제
+    await supabase.storage.from('announcement-images').remove([filePath])
+
+    // 새 파일 업로드
+    const { data, error } = await supabase.storage
+      .from('announcement-images')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: true,
+      })
+
+    if (error) {
+      console.error('Announcement image upload error:', error)
+      return null
+    }
+
+    console.log('Announcement image upload successful:', data)
+
+    // Public URL 생성
+    const {
+      data: { publicUrl },
+    } = supabase.storage.from('announcement-images').getPublicUrl(data.path)
+
+    console.log('Announcement image public URL:', publicUrl)
+
+    return publicUrl
+  } catch (error) {
+    console.error('Error uploading announcement image:', error)
+    return null
+  }
+}
+
+/**
+ * 공지사항 이미지 삭제
+ * @param imageUrl - 삭제할 이미지의 URL
+ */
+export async function deleteAnnouncementImage(imageUrl: string): Promise<boolean> {
+  try {
+    const supabase = createClient()
+
+    // URL에서 파일 경로 추출
+    const url = new URL(imageUrl)
+    const pathParts = url.pathname.split('/')
+    const filePath = pathParts.slice(-2).join('/') // church_id/announcement_id.ext
+
+    const { error } = await supabase.storage
+      .from('announcement-images')
+      .remove([filePath])
+
+    if (error) {
+      console.error('Delete announcement image error:', error)
+      return false
+    }
+
+    return true
+  } catch (error) {
+    console.error('Error deleting announcement image:', error)
+    return false
+  }
+}

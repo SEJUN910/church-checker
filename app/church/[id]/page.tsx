@@ -43,6 +43,7 @@ interface Student {
   phone: string | null;
   age: number | null;
   grade: string | null;
+  birthdate: string | null;
   photo_url: string | null;
   type: 'student' | 'teacher';
   registered_at: string;
@@ -134,12 +135,14 @@ export default function ChurchDetailPage() {
   const [newStudent, setNewStudent] = useState({
     name: '',
     phone: '',
-    age: '',
+    birthdate: '',
     grade: '',
     type: 'student' as 'student' | 'teacher',
-    attendance_days: ['0', '1', '2', '3', '4', '5', '6'] // 기본값: 모든 요일
+    attendance_days: ['0'] // 기본값: 일요일만
   });
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'all' | 'student' | 'teacher'>('all');
 
   // 데이터 로드
   useEffect(() => {
@@ -469,6 +472,20 @@ export default function ChurchDetailPage() {
     }
   };
 
+  // 만나이 계산 함수
+  const calculateAge = (birthdate: string): number => {
+    const today = new Date();
+    const birth = new Date(birthdate);
+    let age = today.getFullYear() - birth.getFullYear();
+    const monthDiff = today.getMonth() - birth.getMonth();
+
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+
+    return age;
+  };
+
   const loadData = async () => {
     try {
       // 교회 정보 로드
@@ -490,10 +507,22 @@ export default function ChurchDetailPage() {
         .from('students')
         .select('*')
         .eq('church_id', churchId)
-        .order('registered_at', { ascending: false });
+        .order('registered_at', { ascending: false});
 
       if (studentsError) throw studentsError;
-      setStudents(studentsData || []);
+
+      // 생년월일이 있는 경우 자동으로 나이 계산
+      const studentsWithAge = (studentsData || []).map(student => {
+        if (student.birthdate && !student.age) {
+          return {
+            ...student,
+            age: calculateAge(student.birthdate)
+          };
+        }
+        return student;
+      });
+
+      setStudents(studentsWithAge);
 
       // 출석 기록 로드
       const { data: attendanceData, error: attendanceError } = await supabase
@@ -534,6 +563,9 @@ export default function ChurchDetailPage() {
     if (!newStudent.name.trim() || !userId) return;
 
     try {
+      // 생년월일로부터 나이 계산
+      const calculatedAge = newStudent.birthdate ? calculateAge(newStudent.birthdate) : null;
+
       // 먼저 학생 정보 저장
       const { data, error } = await supabase
         .from('students')
@@ -542,7 +574,8 @@ export default function ChurchDetailPage() {
             church_id: churchId,
             name: newStudent.name,
             phone: newStudent.phone || null,
-            age: newStudent.age ? parseInt(newStudent.age) : null,
+            birthdate: newStudent.birthdate || null,
+            age: calculatedAge,
             grade: newStudent.grade || null,
             type: newStudent.type,
             registered_by: userId,
@@ -571,9 +604,10 @@ export default function ChurchDetailPage() {
       }
 
       setStudents([data, ...students]);
-      setNewStudent({ name: '', phone: '', age: '', grade: '', type: 'student', attendance_days: ['0', '1', '2', '3', '4', '5', '6'] });
+      setNewStudent({ name: '', phone: '', birthdate: '', grade: '', type: 'student', attendance_days: ['0'] });
       setSelectedPhoto(null);
       setShowAddStudentModal(false);
+      toast.success('등록이 완료되었습니다!');
     } catch (error) {
       console.error('등록 실패:', error);
       alert('등록하는데 실패했습니다.');
@@ -592,26 +626,44 @@ export default function ChurchDetailPage() {
     if (!editingStudent) return;
 
     try {
+      // 생년월일이 변경된 경우 나이 재계산
+      const calculatedAge = editingStudent.birthdate ? calculateAge(editingStudent.birthdate) : editingStudent.age;
+
+      const updateData: any = {
+        name: editingStudent.name,
+        phone: editingStudent.phone || null,
+        birthdate: editingStudent.birthdate || null,
+        age: calculatedAge,
+        grade: editingStudent.grade || null,
+        type: editingStudent.type,
+        notes: editingStudent.notes || null,
+        attendance_days: editingStudent.attendance_days || ['0']
+      };
+
+      // 사진이 선택된 경우 업로드
+      if (selectedPhoto) {
+        const photoUrl = await uploadStudentPhoto(selectedPhoto, editingStudent.id, churchId);
+        if (photoUrl) {
+          updateData.photo_url = photoUrl;
+        }
+      }
+
       const { error } = await supabase
         .from('students')
-        .update({
-          name: editingStudent.name,
-          phone: editingStudent.phone || null,
-          age: editingStudent.age || null,
-          grade: editingStudent.grade || null,
-          type: editingStudent.type,
-          notes: editingStudent.notes || null
-        })
+        .update(updateData)
         .eq('id', editingStudent.id);
 
       if (error) throw error;
 
-      setStudents(students.map(s => s.id === editingStudent.id ? editingStudent : s));
+      const updatedStudent = { ...editingStudent, ...updateData };
+      setStudents(students.map(s => s.id === editingStudent.id ? updatedStudent : s));
       setShowEditStudentModal(false);
       setEditingStudent(null);
+      setSelectedPhoto(null);
+      toast.success('정보가 수정되었습니다!');
     } catch (error) {
       console.error('학생 정보 수정 실패:', error);
-      alert('학생 정보를 수정하는데 실패했습니다.');
+      toast.error('학생 정보를 수정하는데 실패했습니다.');
     }
   };
 
@@ -913,7 +965,7 @@ export default function ChurchDetailPage() {
         <div className="mb-5 grid grid-cols-4 gap-1.5">
           <button
             onClick={() => setActiveTab('attendance')}
-            className={`rounded-lg px-2 py-2 text-xs font-bold transition-all whitespace-nowrap ${
+            className={`rounded-lg px-2 py-2 text-xs font-bold transition-all whitespace-nowrap text-center ${
               activeTab === 'attendance'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
@@ -922,18 +974,8 @@ export default function ChurchDetailPage() {
             출석
           </button>
           <button
-            onClick={() => setActiveTab('announcements')}
-            className={`rounded-lg px-2 py-2 text-xs font-bold transition-all whitespace-nowrap ${
-              activeTab === 'announcements'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-            }`}
-          >
-            공지
-          </button>
-          <button
             onClick={() => setActiveTab('calendar')}
-            className={`rounded-lg px-2 py-2 text-xs font-bold transition-all whitespace-nowrap ${
+            className={`rounded-lg px-2 py-2 text-xs font-bold transition-all whitespace-nowrap text-center ${
               activeTab === 'calendar'
                 ? 'bg-blue-600 text-white'
                 : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
@@ -941,16 +983,18 @@ export default function ChurchDetailPage() {
           >
             일정
           </button>
-          <button
-            onClick={() => setActiveTab('기도' as any)}
-            className={`rounded-lg px-2 py-2 text-xs font-bold transition-all whitespace-nowrap ${
-              activeTab === '기도'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-            }`}
+          <Link
+            href={`/church/${churchId}/announcements`}
+            className="rounded-lg px-2 py-2 text-xs font-bold transition-all whitespace-nowrap bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 flex items-center justify-center"
+          >
+            공지
+          </Link>
+          <Link
+            href={`/church/${churchId}/prayers`}
+            className="rounded-lg px-2 py-2 text-xs font-bold transition-all whitespace-nowrap bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 flex items-center justify-center"
           >
             기도
-          </button>
+          </Link>
         </div>
 
         {/* 기존 관리메뉴 섹션 제거 */}
@@ -1393,6 +1437,59 @@ export default function ChurchDetailPage() {
               <div className="text-xs font-bold">새 인원 등록</div>
             </button>
 
+            {/* 검색 및 필터 */}
+            {students.length > 0 && (
+              <div className="mb-3 space-y-2">
+                {/* 검색창 */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="이름으로 검색..."
+                    className="w-full py-2 pl-10 pr-4 rounded-lg border-2 border-gray-200 text-sm focus:border-blue-600 focus:outline-none"
+                  />
+                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+
+                {/* 타입 필터 */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setTypeFilter('all')}
+                    className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                      typeFilter === 'all'
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    전체
+                  </button>
+                  <button
+                    onClick={() => setTypeFilter('student')}
+                    className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                      typeFilter === 'student'
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    학생
+                  </button>
+                  <button
+                    onClick={() => setTypeFilter('teacher')}
+                    className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                      typeFilter === 'teacher'
+                        ? 'bg-purple-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    교사
+                  </button>
+                </div>
+              </div>
+            )}
+
             {students.length === 0 ? (
               <div className="rounded-xl border border-gray-200 bg-white p-6 text-center">
                 <div className="mb-2 text-4xl">📋</div>
@@ -1403,7 +1500,12 @@ export default function ChurchDetailPage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {students.map((student) => (
+                {students
+                  .filter(s =>
+                    (typeFilter === 'all' || s.type === typeFilter) &&
+                    (searchQuery === '' || s.name.toLowerCase().includes(searchQuery.toLowerCase()))
+                  )
+                  .map((student) => (
                   <div
                     key={student.id}
                     className="flex items-center justify-between rounded-xl bg-white border border-gray-200 p-3 hover:border-gray-300 transition-all"
@@ -1443,14 +1545,24 @@ export default function ChurchDetailPage() {
                         </div>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDeleteStudent(student.id)}
-                      className="ml-2 rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => handleEditStudent(student)}
+                        className="rounded-lg p-1.5 text-gray-400 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteStudent(student.id)}
+                        className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1632,31 +1744,33 @@ export default function ChurchDetailPage() {
                   placeholder="010-1234-5678"
                 />
               </div>
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="mb-2 block text-sm font-bold text-gray-900">
-                    나이 (선택)
-                  </label>
-                  <input
-                    type="number"
-                    value={newStudent.age}
-                    onChange={(e) => setNewStudent({ ...newStudent, age: e.target.value })}
-                    className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
-                    placeholder="15"
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="mb-2 block text-sm font-bold text-gray-900">
-                    학년 (선택)
-                  </label>
-                  <input
-                    type="text"
-                    value={newStudent.grade}
-                    onChange={(e) => setNewStudent({ ...newStudent, grade: e.target.value })}
-                    className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
-                    placeholder="중1"
-                  />
-                </div>
+              <div>
+                <label className="mb-2 block text-sm font-bold text-gray-900">
+                  생년월일 (선택)
+                </label>
+                <input
+                  type="date"
+                  value={newStudent.birthdate}
+                  onChange={(e) => setNewStudent({ ...newStudent, birthdate: e.target.value })}
+                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-900 focus:border-blue-600 focus:outline-none"
+                />
+                {newStudent.birthdate && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    만 {calculateAge(newStudent.birthdate)}세
+                  </p>
+                )}
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-bold text-gray-900">
+                  학년 (선택)
+                </label>
+                <input
+                  type="text"
+                  value={newStudent.grade}
+                  onChange={(e) => setNewStudent({ ...newStudent, grade: e.target.value })}
+                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
+                  placeholder="중1"
+                />
               </div>
 
               {/* 출석 요일 선택 */}
@@ -1698,7 +1812,7 @@ export default function ChurchDetailPage() {
                   type="button"
                   onClick={() => {
                     setShowAddStudentModal(false);
-                    setNewStudent({ name: '', phone: '', age: '', grade: '', type: 'student', attendance_days: ['0', '1', '2', '3', '4', '5', '6'] });
+                    setNewStudent({ name: '', phone: '', birthdate: '', grade: '', type: 'student', attendance_days: ['0'] });
                     setSelectedPhoto(null);
                   }}
                   className="flex-1 rounded-full border-2 border-gray-200 py-3.5 text-base font-bold text-gray-700 hover:bg-gray-50 active:scale-95 transition-all"
@@ -1787,31 +1901,47 @@ export default function ChurchDetailPage() {
                   placeholder="010-1234-5678"
                 />
               </div>
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="mb-2 block text-sm font-bold text-gray-900">
-                    나이 (선택)
-                  </label>
-                  <input
-                    type="number"
-                    value={editingStudent.age || ''}
-                    onChange={(e) => setEditingStudent({ ...editingStudent, age: e.target.value ? parseInt(e.target.value) : null })}
-                    className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
-                    placeholder="15"
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="mb-2 block text-sm font-bold text-gray-900">
-                    학년 (선택)
-                  </label>
-                  <input
-                    type="text"
-                    value={editingStudent.grade || ''}
-                    onChange={(e) => setEditingStudent({ ...editingStudent, grade: e.target.value })}
-                    className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
-                    placeholder="중1"
-                  />
-                </div>
+
+              {/* 사진 업로드 */}
+              <div>
+                <label className="mb-2 block text-sm font-bold text-gray-900">
+                  사진 변경
+                </label>
+                <ImageUpload
+                  currentImageUrl={editingStudent.photo_url || undefined}
+                  onImageSelect={(file) => setSelectedPhoto(file)}
+                  onImageRemove={() => setSelectedPhoto(null)}
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-bold text-gray-900">
+                  생년월일 (선택)
+                </label>
+                <input
+                  type="date"
+                  value={editingStudent.birthdate || ''}
+                  onChange={(e) => setEditingStudent({ ...editingStudent, birthdate: e.target.value })}
+                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-900 focus:border-blue-600 focus:outline-none"
+                />
+                {editingStudent.birthdate && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    만 {calculateAge(editingStudent.birthdate)}세
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-bold text-gray-900">
+                  학년 (선택)
+                </label>
+                <input
+                  type="text"
+                  value={editingStudent.grade || ''}
+                  onChange={(e) => setEditingStudent({ ...editingStudent, grade: e.target.value })}
+                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
+                  placeholder="중1"
+                />
               </div>
               <div>
                 <label className="mb-2 block text-sm font-bold text-gray-900">

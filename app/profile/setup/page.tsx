@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 import toast, { Toaster } from 'react-hot-toast';
+import ImageUpload from '@/app/church/[id]/components/ImageUpload';
+import { uploadProfilePhoto } from '@/lib/supabase/storage';
 
 export default function ProfileSetupPage() {
   const router = useRouter();
@@ -16,8 +18,10 @@ export default function ProfileSetupPage() {
   const [profile, setProfile] = useState({
     name: '',
     phone: '',
-    bio: ''
+    bio: '',
+    avatar_url: ''
   });
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
 
   useEffect(() => {
     checkUserAndProfile();
@@ -73,6 +77,16 @@ export default function ProfileSetupPage() {
     setSaving(true);
 
     try {
+      let avatarUrl = profile.avatar_url;
+
+      // 사진이 선택되었다면 업로드
+      if (selectedPhoto) {
+        const uploadedUrl = await uploadProfilePhoto(user.id, selectedPhoto);
+        if (uploadedUrl) {
+          avatarUrl = uploadedUrl;
+        }
+      }
+
       // profiles 테이블에 저장
       const { error } = await supabase
         .from('profiles')
@@ -82,6 +96,7 @@ export default function ProfileSetupPage() {
             name: profile.name,
             phone: profile.phone || null,
             bio: profile.bio || null,
+            avatar_url: avatarUrl || null,
             updated_at: new Date().toISOString()
           }
         ]);
@@ -125,6 +140,21 @@ export default function ProfileSetupPage() {
 
           {/* 폼 */}
           <form onSubmit={handleSaveProfile} className="space-y-5">
+            {/* 프로필 사진 */}
+            <div>
+              <label className="block text-sm font-bold text-gray-900 mb-3 text-center">
+                프로필 사진 (선택)
+              </label>
+              <ImageUpload
+                currentImageUrl={profile.avatar_url}
+                onImageSelect={setSelectedPhoto}
+                onImageRemove={() => {
+                  setSelectedPhoto(null);
+                  setProfile({ ...profile, avatar_url: '' });
+                }}
+              />
+            </div>
+
             {/* 이름 */}
             <div>
               <label className="block text-sm font-bold text-gray-900 mb-2">

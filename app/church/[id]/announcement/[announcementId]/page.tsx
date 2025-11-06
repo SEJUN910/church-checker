@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
-import toast from 'react-hot-toast';
+import toast, { Toaster } from 'react-hot-toast';
 
 interface Announcement {
   id: string;
@@ -154,9 +154,29 @@ export default function AnnouncementDetailPage() {
 
   const handleAddComment = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim() || !userId || !isAdmin || !currentUserInfo) return;
+    if (!newComment.trim() || !userId) {
+      toast.error('댓글 내용을 입력해주세요.');
+      return;
+    }
 
     try {
+      // 현재 사용자의 프로필 정보 가져오기
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('name')
+        .eq('id', userId)
+        .single();
+
+      const authorName = profileData?.name || currentUserInfo?.name || '익명';
+
+      // 작성자 타입 결정: 관리자인 경우 'teacher', 아니면 학생 정보에서 가져오기
+      let authorType: 'student' | 'teacher' = 'student';
+      if (isAdmin) {
+        authorType = 'teacher';
+      } else if (currentUserInfo?.type) {
+        authorType = currentUserInfo.type;
+      }
+
       const { data, error } = await supabase
         .from('announcement_comments')
         .insert([
@@ -165,8 +185,8 @@ export default function AnnouncementDetailPage() {
             church_id: churchId,
             content: newComment,
             created_by: userId,
-            author_name: currentUserInfo.name,
-            author_type: currentUserInfo.type
+            author_name: authorName,
+            author_type: authorType
           }
         ])
         .select()
@@ -176,9 +196,10 @@ export default function AnnouncementDetailPage() {
 
       setComments([...comments, data]);
       setNewComment('');
+      toast.success('댓글이 작성되었습니다.');
     } catch (error) {
       console.error('댓글 작성 실패:', error);
-      alert('댓글을 작성하는데 실패했습니다.');
+      toast.error('댓글을 작성하는데 실패했습니다.');
     }
   };
 
@@ -260,18 +281,29 @@ export default function AnnouncementDetailPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-6">
-      {/* 상단 투명 바 - 뒤로가기 */}
+      <Toaster position="top-center" />
+
+      {/* 상단 투명 바 - 헤더 */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
         <div className="mx-auto max-w-md px-5 py-3">
-          <Link
-            href={`/church/${churchId}`}
-            className="inline-flex items-center gap-2 text-gray-900 hover:text-blue-600 transition-colors"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-            <span className="font-semibold">{church.name}</span>
-          </Link>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Link href={`/church/${churchId}`}>
+                <button className="rounded-lg p-2 hover:bg-gray-100 transition-colors">
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                </button>
+              </Link>
+              <span className="font-semibold text-gray-900">공지사항</span>
+            </div>
+            <Link
+              href={`/church/${churchId}/announcements`}
+              className="px-3 py-1.5 bg-blue-100 text-blue-700 text-xs font-bold rounded-lg hover:bg-blue-200 transition-colors"
+            >
+              목록
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -337,9 +369,11 @@ export default function AnnouncementDetailPage() {
             {!isEditing && isAdmin && (
               <button
                 onClick={startEditing}
-                className="ml-auto text-sm text-blue-600 hover:text-blue-700 font-semibold transition-colors"
+                className="ml-auto text-blue-600 hover:text-blue-700 transition-colors"
               >
-                ✏️ 수정
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
               </button>
             )}
           </div>
