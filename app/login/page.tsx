@@ -48,8 +48,7 @@ export default function LoginPage() {
             style={{ fontFamily: '"Pretendard", sans-serif' }}>
           그리스도 안에서
         </p> */}
-        <p className="mt-1 text-md text-white/80 italic"
-            style={{ fontFamily: '"EB Garamond", serif' }}>
+        <p className="mt-1 text-md text-white/80 italic" style={{ fontFamily: 'var(--font-noto-serif)' }}>
           ἐν Χριστῷ
         </p>
 
