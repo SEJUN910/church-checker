@@ -313,38 +313,6 @@ export default function AttendanceCalendar({
         })}
       </div>
 
-      {/* 통계 요약 */}
-      <div className="mt-4 pt-4 border-t grid grid-cols-2 gap-3">
-        <div className="bg-blue-50 rounded-lg p-3">
-          <div className="text-xs text-blue-600 mb-1 whitespace-nowrap">이번 달 교사 출석</div>
-          <div className="text-xl font-bold text-blue-700">
-            {attendanceRecords.filter(r => {
-              const recordDate = new Date(r.date)
-              return (
-                recordDate.getFullYear() === year &&
-                recordDate.getMonth() === month &&
-                students.find(s => s.id === r.student_id)?.type === 'teacher'
-              )
-            }).length}
-            <span className="text-xs font-normal ml-1">회</span>
-          </div>
-        </div>
-        <div className="bg-green-50 rounded-lg p-3">
-          <div className="text-xs text-green-600 mb-1 whitespace-nowrap">이번 달 학생 출석</div>
-          <div className="text-xl font-bold text-green-700">
-            {attendanceRecords.filter(r => {
-              const recordDate = new Date(r.date)
-              return (
-                recordDate.getFullYear() === year &&
-                recordDate.getMonth() === month &&
-                students.find(s => s.id === r.student_id)?.type === 'student'
-              )
-            }).length}
-            <span className="text-xs font-normal ml-1">회</span>
-          </div>
-        </div>
-      </div>
-
       {/* 날짜별 출석 모달 */}
       {selectedDate && (
         <div

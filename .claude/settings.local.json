@@ -8,7 +8,11 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push)",
-      "Bash(git remote:*)"
+      "Bash(git remote:*)",
+      "Bash(if not exist \".idea\\runConfigurations\" mkdir .idearunConfigurations)",
+      "Bash(gradlew build:*)",
+      "Bash(.gradlew.bat build:*)",
+      "Bash(Select-Object -First 50)"
     ],
     "deny": [],
     "ask": []
