@@ -5,6 +5,18 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import LoadingSpinner from '@/app/components/LoadingSpinner';
 
+// Android WebView 감지 및 타입 정의
+declare global {
+  interface Window {
+    KakaoNative?: {
+      login: () => void;
+      logout: () => void;
+    };
+    onKakaoLoginResult?: (userInfo: any) => void;
+    onKakaoLogoutResult?: () => void;
+  }
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const supabase = createClient();
@@ -19,10 +31,53 @@ export default function LoginPage() {
         setLoading(false);
       }
     })();
+
+    // Android 네이티브 카카오 로그인 결과 리스너 등록
+    window.onKakaoLoginResult = async (userInfo) => {
+      if (userInfo.error) {
+        console.error('Kakao login failed:', userInfo.error);
+        alert('카카오 로그인에 실패했습니다.');
+        return;
+      }
+
+      console.log('Kakao login success:', userInfo);
+
+      // 네이티브에서 받은 사용자 정보로 백엔드 인증 처리
+      try {
+        const response = await fetch('/api/auth/kakao/native', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            accessToken: userInfo.accessToken,
+            id: userInfo.id,
+            email: userInfo.email,
+            nickname: userInfo.nickname,
+            profileImage: userInfo.profileImage,
+          }),
+        });
+
+        if (response.ok) {
+          router.push('/');
+        } else {
+          console.error('Backend auth failed');
+          alert('로그인 처리에 실패했습니다.');
+        }
+      } catch (error) {
+        console.error('Auth error:', error);
+        alert('로그인 중 오류가 발생했습니다.');
+      }
+    };
   }, [router, supabase]);
 
   const handleKakaoLogin = () => {
-    window.location.href = '/api/auth/kakao';
+    // Android WebView 환경 체크
+    if (typeof window !== 'undefined' && window.KakaoNative) {
+      console.log('Using native Kakao login');
+      window.KakaoNative.login();
+    } else {
+      console.log('Using web Kakao login');
+      window.location.href = '/api/auth/kakao';
+    }
   };
 
   if (loading) return <LoadingSpinner />;

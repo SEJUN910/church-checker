@@ -12,7 +12,16 @@
       "Bash(if not exist \".idea\\runConfigurations\" mkdir .idearunConfigurations)",
       "Bash(gradlew build:*)",
       "Bash(.gradlew.bat build:*)",
-      "Bash(Select-Object -First 50)"
+      "Bash(Select-Object -First 50)",
+      "Bash(if [ -d \"android\" ])",
+      "Bash(then echo \"Android folder exists\")",
+      "Bash(else echo \"Android folder does not exist\")",
+      "Bash(fi)",
+      "Bash(npx cap sync:*)",
+      "Bash(./gradlew:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(taskkill:*)",
+      "Bash(copy \"C:\\\\Users\\\\sejun\\\\Downloads\\\\Gemini_Generated_Image_6b8ajn6b8ajn6b8a.png\" \"C:\\\\Users\\\\sejun\\\\OneDrive\\\\Desktop\\\\church-checker-android\\\\app\\\\src\\\\main\\\\res\\\\mipmap-mdpi\\\\ic_launcher.png\")"
     ],
     "deny": [],
     "ask": []
