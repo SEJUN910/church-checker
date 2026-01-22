@@ -8,6 +8,7 @@ import LoadingSpinner from '@/app/components/LoadingSpinner';
 // Android WebView 감지 및 타입 정의
 declare global {
   interface Window {
+    isNativeApp?: boolean;
     KakaoNative?: {
       login: () => void;
       logout: () => void;
@@ -70,17 +71,21 @@ export default function LoginPage() {
   }, [router, supabase]);
 
   const handleKakaoLogin = () => {
-    // Android WebView 환경 체크
-    console.log('KakaoNative check:', typeof window !== 'undefined' ? window.KakaoNative : 'window undefined');
-    console.log('User Agent:', navigator.userAgent);
+    console.log('=== Kakao Login Debug ===');
+    console.log('isNativeApp:', window.isNativeApp);
+    console.log('KakaoNative:', window.KakaoNative);
+    console.log('========================');
 
-    if (typeof window !== 'undefined' && window.KakaoNative) {
+    // 네이티브 앱이면 KakaoNative 사용
+    if (window.isNativeApp && window.KakaoNative) {
       console.log('Using native Kakao login');
       window.KakaoNative.login();
-    } else {
-      console.log('Using web Kakao login - KakaoNative not found');
-      window.location.href = '/api/auth/kakao';
+      return;
     }
+
+    // 웹 브라우저면 웹 로그인
+    console.log('Using web Kakao login');
+    window.location.href = '/api/auth/kakao';
   };
 
   if (loading) return <LoadingSpinner />;
