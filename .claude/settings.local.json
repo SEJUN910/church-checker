@@ -21,9 +21,21 @@
       "Bash(./gradlew:*)",
       "Bash(powershell -Command:*)",
       "Bash(taskkill:*)",
-      "Bash(copy \"C:\\\\Users\\\\sejun\\\\Downloads\\\\Gemini_Generated_Image_6b8ajn6b8ajn6b8a.png\" \"C:\\\\Users\\\\sejun\\\\OneDrive\\\\Desktop\\\\church-checker-android\\\\app\\\\src\\\\main\\\\res\\\\mipmap-mdpi\\\\ic_launcher.png\")"
+      "Bash(copy \"C:\\\\Users\\\\sejun\\\\Downloads\\\\Gemini_Generated_Image_6b8ajn6b8ajn6b8a.png\" \"C:\\\\Users\\\\sejun\\\\OneDrive\\\\Desktop\\\\church-checker-android\\\\app\\\\src\\\\main\\\\res\\\\mipmap-mdpi\\\\ic_launcher.png\")",
+      "Bash(xcopy:*)",
+      "Bash(robocopy:*)",
+      "Bash(gradlew:*)",
+      "Bash(cmd /c \"cd /d C:\\\\AndroidProjects\\\\church-checker-android && gradlew.bat --stop\")",
+      "Bash(cmd /c \"rd /s /q C:\\\\Users\\\\sejun\\\\.gradle\\\\caches 2>nul || echo Cache cleanup attempted\")",
+      "Bash(cmd /c \"cd /d C:\\\\AndroidProjects\\\\church-checker-android && gradlew.bat clean\")",
+      "Bash(cmd /c \"dir C:\\\\AndroidProjects\")",
+      "Bash(find:*)",
+      "Bash(ls:*)"
     ],
     "deny": [],
-    "ask": []
+    "ask": [],
+    "additionalDirectories": [
+      "C:\\AndroidProjects\\church-checker-android\\app\\src\\androidTest"
+    ]
   }
 }

@@ -71,11 +71,14 @@ export default function LoginPage() {
 
   const handleKakaoLogin = () => {
     // Android WebView 환경 체크
+    console.log('KakaoNative check:', typeof window !== 'undefined' ? window.KakaoNative : 'window undefined');
+    console.log('User Agent:', navigator.userAgent);
+
     if (typeof window !== 'undefined' && window.KakaoNative) {
       console.log('Using native Kakao login');
       window.KakaoNative.login();
     } else {
-      console.log('Using web Kakao login');
+      console.log('Using web Kakao login - KakaoNative not found');
       window.location.href = '/api/auth/kakao';
     }
   };
