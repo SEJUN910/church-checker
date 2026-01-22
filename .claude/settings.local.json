@@ -30,7 +30,9 @@
       "Bash(cmd /c \"cd /d C:\\\\AndroidProjects\\\\church-checker-android && gradlew.bat clean\")",
       "Bash(cmd /c \"dir C:\\\\AndroidProjects\")",
       "Bash(find:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(keytool -list:*)",
+      "Bash(xxd:*)"
     ],
     "deny": [],
     "ask": [],
