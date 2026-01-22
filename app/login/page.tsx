@@ -73,14 +73,23 @@ export default function LoginPage() {
   const handleKakaoLogin = () => {
     console.log('=== Kakao Login Debug ===');
     console.log('isNativeApp:', window.isNativeApp);
+    console.log('KakaoNative exists:', !!window.KakaoNative);
     console.log('KakaoNative:', window.KakaoNative);
+
+    // Android JavascriptInterface 체크 - login 프로퍼티 존재 여부로 확인
+    const hasNativeLogin = !!(window.KakaoNative && 'login' in window.KakaoNative);
+    console.log('hasNativeLogin:', hasNativeLogin);
     console.log('========================');
 
     // 네이티브 앱이면 KakaoNative 사용
-    if (window.isNativeApp && window.KakaoNative) {
+    if (hasNativeLogin) {
       console.log('Using native Kakao login');
-      window.KakaoNative.login();
-      return;
+      try {
+        window.KakaoNative!.login();
+        return;
+      } catch (e) {
+        console.error('Native login error:', e);
+      }
     }
 
     // 웹 브라우저면 웹 로그인
