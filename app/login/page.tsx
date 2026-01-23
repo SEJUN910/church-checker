@@ -57,11 +57,14 @@ export default function LoginPage() {
           }),
         });
 
-        if (response.ok) {
+        const data = await response.json();
+        console.log('Backend response:', response.status, data);
+
+        if (response.ok && data.success) {
           router.push('/');
         } else {
-          console.error('Backend auth failed');
-          alert('로그인 처리에 실패했습니다.');
+          console.error('Backend auth failed:', data);
+          alert(`로그인 처리에 실패했습니다: ${data.error || 'Unknown error'}`);
         }
       } catch (error) {
         console.error('Auth error:', error);

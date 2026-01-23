@@ -3,9 +3,9 @@ import { createClient } from '@/lib/supabase/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { accessToken, id, email, nickname, profileImage } = await request.json();
+    const { accessToken, id, nickname, profileImage } = await request.json();
 
-    console.log('Native Kakao login attempt:', { id, email, nickname });
+    console.log('Native Kakao login attempt:', { id, nickname });
 
     if (!accessToken || !id) {
       console.error('Missing required fields:', { accessToken: !!accessToken, id: !!id });
@@ -18,109 +18,128 @@ export async function POST(request: NextRequest) {
     // Supabase 클라이언트 생성
     const supabase = await createClient();
 
-    // 고정 비밀번호 생성 (카카오 ID 기반 - accessToken은 매번 변경되므로 사용하지 않음)
-    const fixedPassword = `kakao_native_${id}_secret_key_2024`;
-    const userEmail = email || `kakao_${id}@churchecker.app`;
+    // 웹 로그인과 동일한 방식 사용
+    const userEmail = `kakao_${id}@kakao.local`;
+    const name = nickname || '카카오 사용자';
+    const avatarUrl = profileImage;
+    // NEXT_PUBLIC_ 변수는 서버에서도 접근 가능하지만, 없을 경우를 대비해 로깅
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    console.log('Anon key available:', !!anonKey, anonKey?.substring(0, 10));
+    const password = `kakao_${id}_secure_${anonKey?.substring(0, 20)}`;
 
-    // 카카오 사용자 정보로 Supabase 인증
-    // 기존 사용자 확인 또는 새 사용자 생성
-    const { data: existingUser, error: getUserError } = await supabase
-      .from('users')
-      .select('*')
-      .eq('kakao_id', id.toString())
-      .single();
+    console.log('Checking if user exists:', userEmail);
 
-    if (getUserError && getUserError.code !== 'PGRST116') {
-      console.error('Error checking user:', getUserError);
-      return NextResponse.json(
-        { error: 'Failed to check user' },
-        { status: 500 }
-      );
-    }
-
-    let userId: string;
-
-    // 먼저 Supabase Auth 로그인/가입 시도
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    // 기존 사용자 확인 및 로그인 시도
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
       email: userEmail,
-      password: fixedPassword,
+      password,
     });
 
-    if (signInError) {
-      console.log('Sign in failed, trying sign up:', signInError.message);
+    if (signInData?.user) {
+      // 기존 사용자 - 로그인 성공
+      console.log('Existing user logged in:', signInData.user.id);
 
-      // 계정이 없으면 생성
-      const { error: signUpError } = await supabase.auth.signUp({
+      // 프로필 확인
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('id', signInData.user.id)
+        .maybeSingle();
+
+      // 프로필이 없으면 생성
+      if (!existingProfile) {
+        await supabase.from('profiles').insert({
+          id: signInData.user.id,
+          name,
+          avatar_url: avatarUrl,
+          kakao_id: id.toString(),
+        });
+        console.log('Profile created for existing user');
+      }
+
+      return NextResponse.json(
+        { success: true, userId: signInData.user.id, isNewUser: false },
+        { status: 200 }
+      );
+
+    } else if (signInError?.message.includes('Invalid login credentials')) {
+      // 신규 사용자 - 회원가입
+      console.log('New user, creating account...');
+
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
         email: userEmail,
-        password: fixedPassword,
+        password,
+        options: {
+          data: {
+            name,
+            kakao_id: id.toString(),
+            avatar_url: avatarUrl,
+          },
+        },
       });
 
       if (signUpError) {
         console.error('Sign up error:', signUpError);
         return NextResponse.json(
-          { error: `Failed to create auth session: ${signUpError.message}` },
+          { error: `Failed to create account: ${signUpError.message}` },
           { status: 500 }
         );
       }
 
-      // 가입 후 재로그인
-      const { error: reSignInError } = await supabase.auth.signInWithPassword({
+      if (!signUpData.user) {
+        return NextResponse.json(
+          { error: '회원가입 실패' },
+          { status: 500 }
+        );
+      }
+
+      console.log('User created:', signUpData.user.id);
+
+      // 프로필 생성
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: signUpData.user.id,
+          name,
+          avatar_url: avatarUrl,
+          kakao_id: id.toString(),
+        });
+
+      if (profileError) {
+        console.error('Profile creation error:', profileError);
+      } else {
+        console.log('Profile created');
+      }
+
+      // 자동 로그인
+      const { error: autoSignInError } = await supabase.auth.signInWithPassword({
         email: userEmail,
-        password: fixedPassword,
+        password,
       });
 
-      if (reSignInError) {
-        console.error('Re-sign in error:', reSignInError);
+      if (autoSignInError) {
+        console.error('Auto sign-in error:', autoSignInError);
         return NextResponse.json(
-          { error: `Failed to sign in after signup: ${reSignInError.message}` },
+          { error: `Auto sign-in failed: ${autoSignInError.message}` },
           { status: 500 }
         );
       }
-    }
 
-    if (existingUser) {
-      // 기존 사용자
-      userId = existingUser.id;
+      console.log('Native Kakao signup success:', { userId: signUpData.user.id });
 
-      // 사용자 정보 업데이트
-      await supabase
-        .from('users')
-        .update({
-          name: nickname || existingUser.name,
-          profile_image: profileImage || existingUser.profile_image,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', userId);
+      return NextResponse.json(
+        { success: true, userId: signUpData.user.id, isNewUser: true },
+        { status: 200 }
+      );
+
     } else {
-      // 새 사용자 생성
-      const { data: newUser, error: createError } = await supabase
-        .from('users')
-        .insert({
-          kakao_id: id.toString(),
-          email: userEmail,
-          name: nickname,
-          profile_image: profileImage,
-        })
-        .select()
-        .single();
-
-      if (createError || !newUser) {
-        console.error('Error creating user:', createError);
-        return NextResponse.json(
-          { error: `Failed to create user: ${createError?.message}` },
-          { status: 500 }
-        );
-      }
-
-      userId = newUser.id;
+      // 다른 에러
+      console.error('Unexpected sign-in error:', signInError);
+      return NextResponse.json(
+        { error: signInError?.message || '로그인 실패' },
+        { status: 500 }
+      );
     }
-
-    console.log('Native Kakao login success:', { userId, email: userEmail });
-
-    return NextResponse.json(
-      { success: true, userId },
-      { status: 200 }
-    );
   } catch (error) {
     console.error('Native Kakao auth error:', error);
     return NextResponse.json(
