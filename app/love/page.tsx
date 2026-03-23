@@ -359,7 +359,7 @@ export default function LovePage() {
                     fontFamily: 'var(--font-noto-sans)',
                   }}
                 >
-                  {loadingMore ? '불러오는 중…' : `더 보기 (${total - messages.length}개)`}
+                  {loadingMore ? '불러오는 중…' : `더 보기 (${total - messages.length}개)`} 
                 </button>
               )}
             </>
