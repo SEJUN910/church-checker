@@ -32,7 +32,8 @@
       "Bash(find:*)",
       "Bash(ls:*)",
       "Bash(keytool -list:*)",
-      "Bash(xxd:*)"
+      "Bash(xxd:*)",
+      "Bash(npm install:*)"
     ],
     "deny": [],
     "ask": [],
