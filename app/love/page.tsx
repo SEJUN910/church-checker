@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import toast, { Toaster } from 'react-hot-toast';
 import Link from 'next/link';
+import { PiHandsPrayingFill, PiHandsPraying } from 'react-icons/pi';
 
 interface PrayerItem {
   id: string;
@@ -17,6 +18,7 @@ interface Message {
   author_name: string;
   content: string;
   created_at: string;
+  likes_count: number;
 }
 
 const cream     = '#f7f3ed';
@@ -72,13 +74,26 @@ export default function LovePage() {
   const [authorName, setAuthorName] = useState('');
   const [content, setContent] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const isSubmittingRef = useRef(false);
+
+  const [likedIds, setLikedIds] = useState<Set<string>>(new Set());
+  const [poppingId, setPoppingId] = useState<string | null>(null);
+  const [sort, setSort] = useState<'latest' | 'likes'>('latest');
 
   const supabase = createClient();
 
   useEffect(() => {
+    if (!localStorage.getItem('dk_anon_id')) {
+      localStorage.setItem('dk_anon_id', crypto.randomUUID());
+    }
+    const saved = localStorage.getItem('dk_liked_messages');
+    if (saved) setLikedIds(new Set(JSON.parse(saved)));
     loadPrayers();
-    loadMessages(1);
   }, []);
+
+  useEffect(() => {
+    loadMessages(1, sort);
+  }, [sort]);
 
   const loadPrayers = async () => {
     try {
@@ -93,10 +108,10 @@ export default function LovePage() {
     }
   };
 
-  const loadMessages = async (p: number) => {
+  const loadMessages = async (p: number, s: 'latest' | 'likes' = sort) => {
     if (p === 1) setMsgLoading(true); else setLoadingMore(true);
     try {
-      const res = await fetch(`/api/love/messages?page=${p}`);
+      const res = await fetch(`/api/love/messages?page=${p}&sort=${s}`);
       const json = await res.json();
       if (p === 1) setMessages(json.data || []);
       else setMessages(prev => [...prev, ...(json.data || [])]);
@@ -108,9 +123,22 @@ export default function LovePage() {
     }
   };
 
+  const handleLike = async (msgId: string) => {
+    const liked = likedIds.has(msgId);
+    const newLiked = new Set(likedIds);
+    if (liked) newLiked.delete(msgId); else newLiked.add(msgId);
+    setLikedIds(newLiked);
+    localStorage.setItem('dk_liked_messages', JSON.stringify([...newLiked]));
+    setMessages(prev => prev.map(m => m.id === msgId ? { ...m, likes_count: m.likes_count + (liked ? -1 : 1) } : m));
+    if (!liked) { setPoppingId(msgId); setTimeout(() => setPoppingId(null), 400); }
+    await fetch(`/api/love/messages/${msgId}/like`, { method: liked ? 'DELETE' : 'POST' });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim()) return;
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setSubmitting(true);
     try {
       const res = await fetch('/api/love/messages', {
@@ -128,6 +156,7 @@ export default function LovePage() {
     } catch {
       toast.error('잠시 후 다시 시도해주세요');
     } finally {
+      isSubmittingRef.current = false;
       setSubmitting(false);
     }
   };
@@ -263,6 +292,22 @@ export default function LovePage() {
             </button>
           </div>
 
+          {/* 정렬 버튼 */}
+          <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+            {(['latest', 'likes'] as const).map(s => (
+              <button key={s} onClick={() => setSort(s)} style={{
+                padding: '5px 12px', fontSize: 11, fontWeight: 500,
+                borderRadius: 2, border: `1px solid ${sort === s ? gold : parchment}`,
+                background: sort === s ? gold : 'transparent',
+                color: sort === s ? '#fff' : inkSoft,
+                cursor: 'pointer', transition: 'all 0.2s',
+                fontFamily: 'var(--font-noto-sans)', letterSpacing: '0.04em',
+              }}>
+                {s === 'latest' ? '최신순' : '아멘순'}
+              </button>
+            ))}
+          </div>
+
           {/* 작성 폼 슬라이드 */}
           <div style={{
             display: 'grid',
@@ -340,9 +385,28 @@ export default function LovePage() {
                       {new Date(msg.created_at).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' })}
                     </span>
                   </div>
-                  <p style={{ fontSize: 14, lineHeight: 1.8, color: inkMid, whiteSpace: 'pre-wrap', margin: 0, fontWeight: 300 }}>
+                  <p style={{ fontSize: 14, lineHeight: 1.8, color: inkMid, whiteSpace: 'pre-wrap', margin: 0, fontWeight: 300, wordBreak: 'break-all' }}>
                     {msg.content}
                   </p>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+                    <button
+                      onClick={() => handleLike(msg.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 5,
+                        background: 'none', border: 'none', cursor: 'pointer',
+                        padding: '2px 0', fontSize: 12,
+                        color: likedIds.has(msg.id) ? gold : inkSoft,
+                        transition: 'color 0.2s', fontFamily: 'var(--font-noto-sans)',
+                      }}
+                    >
+                      <span className={poppingId === msg.id ? 'heart-pop' : ''} style={{ display: 'flex', alignItems: 'center', fontSize: 17 }}>
+                        {likedIds.has(msg.id)
+                          ? <PiHandsPrayingFill color="#e94545" />
+                          : <PiHandsPraying />}
+                      </span>
+                      {msg.likes_count > 0 && <span>{msg.likes_count}</span>}
+                    </button>
+                  </div>
                 </div>
               ))}
 
