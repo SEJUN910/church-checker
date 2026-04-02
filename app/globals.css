@@ -25,6 +25,29 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* tiptap-extension-resize-image */
+.image-resizer {
+  display: inline-flex;
+  position: relative;
+}
+.image-resizer img {
+  display: block;
+  max-width: 100%;
+  border-radius: 6px;
+}
+.image-resizer .resize-trigger {
+  position: absolute;
+  right: -5px;
+  bottom: -5px;
+  width: 12px;
+  height: 12px;
+  background: #1a73e8;
+  border-radius: 50%;
+  cursor: se-resize;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
 /* 페이드업 애니메이션 */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(18px); }
@@ -201,6 +224,65 @@ body {
   100% { transform: scale(1); }
 }
 .heart-pop { animation: heartPop 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+
+/* 봉투 플랩 열기 */
+@keyframes envelopeFlapOpen {
+  0%   { transform: scaleY(1); opacity: 1; }
+  100% { transform: scaleY(0); opacity: 0; }
+}
+
+/* 콘페티 폭죽 - 8방향 포물선 */
+@keyframes confettiPopA {
+  0%   { transform: translate(0,0) rotate(0deg); opacity: 1; }
+  22%  { transform: translate(-110px,-220px) rotate(200deg); opacity: 1; }
+  100% { transform: translate(-150px,430px) rotate(740deg); opacity: 0; }
+}
+@keyframes confettiPopB {
+  0%   { transform: translate(0,0) rotate(0deg); opacity: 1; }
+  22%  { transform: translate(120px,-210px) rotate(-200deg); opacity: 1; }
+  100% { transform: translate(160px,420px) rotate(-700deg); opacity: 0; }
+}
+@keyframes confettiPopC {
+  0%   { transform: translate(0,0) rotate(0deg); opacity: 1; }
+  25%  { transform: translate(-260px,-180px) rotate(280deg); opacity: 1; }
+  100% { transform: translate(-340px,380px) rotate(660deg); opacity: 0; }
+}
+@keyframes confettiPopD {
+  0%   { transform: translate(0,0) rotate(0deg); opacity: 1; }
+  25%  { transform: translate(270px,-170px) rotate(-280deg); opacity: 1; }
+  100% { transform: translate(360px,370px) rotate(-640deg); opacity: 0; }
+}
+@keyframes confettiPopE {
+  0%   { transform: translate(0,0) rotate(0deg); opacity: 1; }
+  20%  { transform: translate(-20px,-290px) rotate(180deg); opacity: 1; }
+  100% { transform: translate(-40px,420px) rotate(600deg); opacity: 0; }
+}
+@keyframes confettiPopF {
+  0%   { transform: translate(0,0) rotate(0deg); opacity: 1; }
+  20%  { transform: translate(30px,-280px) rotate(-180deg); opacity: 1; }
+  100% { transform: translate(60px,410px) rotate(-580deg); opacity: 0; }
+}
+@keyframes confettiPopG {
+  0%   { transform: translate(0,0) rotate(0deg); opacity: 1; }
+  22%  { transform: translate(-380px,-140px) rotate(320deg); opacity: 1; }
+  100% { transform: translate(-480px,340px) rotate(760deg); opacity: 0; }
+}
+@keyframes confettiPopH {
+  0%   { transform: translate(0,0) rotate(0deg); opacity: 1; }
+  22%  { transform: translate(390px,-130px) rotate(-320deg); opacity: 1; }
+  100% { transform: translate(490px,330px) rotate(-740deg); opacity: 0; }
+}
+
+/* SNS 피드 메세지 슬라이드인 */
+@keyframes msgSlideIn {
+  0%   { transform: translateY(18px); opacity: 0; }
+  100% { transform: translateY(0);    opacity: 1; }
+}
+/* NEW 패널 슬라이드인 */
+@keyframes newPanelSlideIn {
+  0%   { transform: translateX(24px) scale(0.97); opacity: 0; }
+  100% { transform: translateX(0)    scale(1);    opacity: 1; }
+}
 
 /* TipTap 에디터 & prose HTML 렌더링: preflight heading 리셋 복구 */
 .ProseMirror h1, .prose h1 { font-size: 1.75em; font-weight: 700; line-height: 1.2; margin: 0.6em 0 0.3em; }

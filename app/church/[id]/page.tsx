@@ -45,9 +45,9 @@ interface Student {
   grade: string | null;
   birthdate: string | null;
   photo_url: string | null;
-  type: 'student' | 'teacher';
-  registered_at: string;
-  notes: string | null;
+  type: 'student' | 'teacher' | 'parent' | 'other';
+  created_at: string;
+  memo: string | null;
   attendance_days?: string[];
 }
 
@@ -100,7 +100,7 @@ export default function ChurchDetailPage() {
   const [showAddStudentModal, setShowAddStudentModal] = useState(false);
   const [showEditStudentModal, setShowEditStudentModal] = useState(false);
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
-  const [activeTab, setActiveTab] = useState<'attendance' | 'calendar' | 'announcements' | 'prayer' | '기도'>('attendance');
+  const [activeTab, setActiveTab] = useState<'attendance' | 'calendar' | 'announcements' | 'members'>('attendance');
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
@@ -142,7 +142,7 @@ export default function ChurchDetailPage() {
   });
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'student' | 'teacher'>('all');
+  const [typeFilter, setTypeFilter] = useState<'student' | 'teacher' | 'parent' | 'other'>('student');
 
   // 데이터 로드
   useEffect(() => {
@@ -248,7 +248,7 @@ export default function ChurchDetailPage() {
         (prayerData || []).map(async (prayer) => {
           if (prayer.student_id && !prayer.is_anonymous) {
             const { data: student } = await supabase
-              .from('students')
+              .from('members')
               .select('name')
               .eq('id', prayer.student_id)
               .single();
@@ -504,10 +504,10 @@ export default function ChurchDetailPage() {
 
       // 학생 목록 로드
       const { data: studentsData, error: studentsError } = await supabase
-        .from('students')
+        .from('members')
         .select('*')
         .eq('church_id', churchId)
-        .order('registered_at', { ascending: false});
+        .order('created_at', { ascending: false });
 
       if (studentsError) throw studentsError;
 
@@ -563,22 +563,18 @@ export default function ChurchDetailPage() {
     if (!newStudent.name.trim() || !userId) return;
 
     try {
-      // 생년월일로부터 나이 계산
-      const calculatedAge = newStudent.birthdate ? calculateAge(newStudent.birthdate) : null;
-
       // 먼저 학생 정보 저장
       const { data, error } = await supabase
-        .from('students')
+        .from('members')
         .insert([
           {
             church_id: churchId,
             name: newStudent.name,
             phone: newStudent.phone || null,
             birthdate: newStudent.birthdate || null,
-            age: calculatedAge,
             grade: newStudent.grade || null,
             type: newStudent.type,
-            registered_by: userId,
+            created_by: userId,
             attendance_days: newStudent.attendance_days
           }
         ])
@@ -595,7 +591,7 @@ export default function ChurchDetailPage() {
         // photo_url 업데이트
         if (photoUrl) {
           await supabase
-            .from('students')
+            .from('members')
             .update({ photo_url: photoUrl })
             .eq('id', data.id);
 
@@ -626,17 +622,13 @@ export default function ChurchDetailPage() {
     if (!editingStudent) return;
 
     try {
-      // 생년월일이 변경된 경우 나이 재계산
-      const calculatedAge = editingStudent.birthdate ? calculateAge(editingStudent.birthdate) : editingStudent.age;
-
       const updateData: any = {
         name: editingStudent.name,
         phone: editingStudent.phone || null,
         birthdate: editingStudent.birthdate || null,
-        age: calculatedAge,
         grade: editingStudent.grade || null,
         type: editingStudent.type,
-        notes: editingStudent.notes || null,
+        memo: editingStudent.memo || null,
         attendance_days: editingStudent.attendance_days || ['0']
       };
 
@@ -649,7 +641,7 @@ export default function ChurchDetailPage() {
       }
 
       const { error } = await supabase
-        .from('students')
+        .from('members')
         .update(updateData)
         .eq('id', editingStudent.id);
 
@@ -673,7 +665,7 @@ export default function ChurchDetailPage() {
 
     try {
       const { error } = await supabase
-        .from('students')
+        .from('members')
         .delete()
         .eq('id', studentId);
 
@@ -719,7 +711,7 @@ export default function ChurchDetailPage() {
       }
 
       // 출석 체크 추가 (모든 필수 필드 검증)
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('attendance')
         .insert([
           {
@@ -728,9 +720,7 @@ export default function ChurchDetailPage() {
             date: today,
             checked_by: userId
           }
-        ])
-        .select()
-        .single();
+        ]);
 
       if (error) {
         console.error('출석 체크 DB 에러:', error);
@@ -808,20 +798,25 @@ export default function ChurchDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-6">
+    <div className="min-h-screen bg-[#fcf9f4] pb-6">
       {/* 상단 투명 바 - 뒤로가기 및 설정 */}
-      <div className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-200">
+      <div className="fixed top-0 left-0 right-0 z-50 bg-[#fcf9f4]/85 backdrop-blur-md">
         <div className="mx-auto max-w-md px-5 py-3 flex items-center justify-between">
-          <Link href="/" className="inline-flex items-center gap-2 text-gray-900 hover:text-blue-600 transition-colors">
+          <Link href="/" className="inline-flex items-center gap-2 text-[#1c1c19] hover:text-[#32617d] transition-colors">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            <span className="font-semibold">{church.name}</span>
+            <div>
+              <span className="font-semibold text-[#1c1c19]">{church.name}</span>
+              <p className="text-[10px] text-[#41484d] font-normal leading-tight">
+                {new Date().toLocaleDateString('ko-KR', { month: 'long', day: 'numeric', weekday: 'short' })}
+              </p>
+            </div>
           </Link>
           <div className="relative management-menu-container">
             <button
               onClick={() => setShowManagementMenu(!showManagementMenu)}
-              className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 hover:text-blue-600 transition-all"
+              className="p-2 rounded-xl text-[#41484d] hover:bg-[#f0ede8] transition-all"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
@@ -830,129 +825,53 @@ export default function ChurchDetailPage() {
 
             {/* 팝다운 메뉴 */}
             {showManagementMenu && (
-              <div className="absolute right-0 top-12 w-64 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden animate-slide-down z-50">
+              <div className="absolute right-0 top-12 w-60 bg-[#ffffff] rounded-2xl overflow-hidden animate-slide-down z-50 shadow-[0px_12px_32px_rgba(28,28,25,0.14)]">
                 <div className="p-2">
-                  <div
-                    onClick={() => {
-                      setShowAnnouncementModal(true);
-                      setShowManagementMenu(false);
-                    }}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-all cursor-pointer"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center">
-                      <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-900">공지 작성</p>
-                      <p className="text-xs text-gray-500">공지사항 등록</p>
-                    </div>
-                  </div>
-
-                  <div
-                    onClick={() => {
-                      setShowPrayerModal(true);
-                      setShowManagementMenu(false);
-                    }}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-all cursor-pointer"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                      <span className="text-xl">🙏</span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-900">기도 등록</p>
-                      <p className="text-xs text-gray-500">기도제목 작성</p>
-                    </div>
-                  </div>
-
-                  <div
-                    onClick={() => {
-                      setActiveTab('prayer');
-                      setShowManagementMenu(false);
-                    }}
-                    className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-all cursor-pointer"
-                  >
-                    <div className="w-10 h-10 rounded-lg bg-slate-100 flex items-center justify-center">
-                      <svg className="w-5 h-5 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-3-3h-2a3 3 0 00-3 3v2zm-7 0H5v-2a3 3 0 013-3h2a3 3 0 013 3v2zm6-10a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-900">인원 관리</p>
-                      <p className="text-xs text-gray-500">학생/교사 등록</p>
-                    </div>
-                  </div>
-
-                  <Link href={`/church/${churchId}/calendar`}>
-                    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-all cursor-pointer">
-                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                      </div>
+                  {[
+                    {
+                      label: '공지 작성', sub: '공지사항 등록',
+                      onClick: () => { setShowAnnouncementModal(true); setShowManagementMenu(false); },
+                      icon: <svg className="w-5 h-5 text-[#32617d]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" /></svg>
+                    },
+                    {
+                      label: '기도 등록', sub: '기도제목 작성',
+                      onClick: () => { setShowPrayerModal(true); setShowManagementMenu(false); },
+                      icon: <span className="text-lg">🙏</span>
+                    },
+                    {
+                      label: '인원 관리', sub: '인원 등록·수정',
+                      onClick: () => { setActiveTab('members'); setShowManagementMenu(false); },
+                      icon: <svg className="w-5 h-5 text-[#32617d]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-3-3h-2a3 3 0 00-3 3v2zm-7 0H5v-2a3 3 0 013-3h2a3 3 0 013 3v2zm6-10a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                    },
+                  ].map((item) => (
+                    <div key={item.label} onClick={item.onClick} className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#f6f3ee] transition-all cursor-pointer">
+                      <div className="w-9 h-9 rounded-xl bg-[#f0ede8] flex items-center justify-center shrink-0">{item.icon}</div>
                       <div>
-                        <p className="text-sm font-bold text-gray-900">교회 달력</p>
-                        <p className="text-xs text-gray-500">일정 관리</p>
+                        <p className="text-sm font-semibold text-[#1c1c19]">{item.label}</p>
+                        <p className="text-xs text-[#41484d]">{item.sub}</p>
                       </div>
                     </div>
-                  </Link>
+                  ))}
 
-                  <Link href={`/church/${churchId}/service-schedule`}>
-                    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-all cursor-pointer">
-                      <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-gray-900">봉사자</p>
-                        <p className="text-xs text-gray-500">봉사자 배정</p>
-                      </div>
-                    </div>
-                  </Link>
+                  <div className="my-1.5 h-px bg-[#f0ede8]" />
 
-                  {isAdmin && (
-                    <Link href={`/church/${churchId}/admins`}>
-                      <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-all cursor-pointer">
-                        <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
-                          <svg className="w-5 h-5 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
-                          </svg>
-                        </div>
+                  {[
+                    { label: '교회 달력', sub: '일정 관리', href: `/church/${churchId}/calendar`, icon: <svg className="w-5 h-5 text-[#32617d]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg> },
+                    { label: '봉사자', sub: '봉사자 배정', href: `/church/${churchId}/service-schedule`, icon: <svg className="w-5 h-5 text-[#32617d]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg> },
+                    { label: '헌금 관리', sub: '헌금 기록', href: `/church/${churchId}/offerings`, icon: <span className="text-lg">💰</span> },
+                    { label: '지출 기록', sub: '부서 지출', href: `/church/${churchId}/expenses`, icon: <svg className="w-5 h-5 text-[#32617d]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" /></svg> },
+                    ...(isAdmin ? [{ label: '관리자 관리', sub: '멤버 초대', href: `/church/${churchId}/admins`, icon: <svg className="w-5 h-5 text-[#32617d]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg> }] : []),
+                  ].map((item) => (
+                    <Link key={item.label} href={item.href}>
+                      <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#f6f3ee] transition-all cursor-pointer">
+                        <div className="w-9 h-9 rounded-xl bg-[#f0ede8] flex items-center justify-center shrink-0">{item.icon}</div>
                         <div>
-                          <p className="text-sm font-bold text-gray-900">관리자 관리</p>
-                          <p className="text-xs text-gray-500">멤버 초대</p>
+                          <p className="text-sm font-semibold text-[#1c1c19]">{item.label}</p>
+                          <p className="text-xs text-[#41484d]">{item.sub}</p>
                         </div>
                       </div>
                     </Link>
-                  )}
-
-                  <Link href={`/church/${churchId}/offerings`}>
-                    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-all cursor-pointer">
-                      <div className="w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center">
-                        <span className="text-xl">💰</span>
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-gray-900">헌금 관리</p>
-                        <p className="text-xs text-gray-500">헌금 기록</p>
-                      </div>
-                    </div>
-                  </Link>
-
-                  <Link href={`/church/${churchId}/expenses`}>
-                    <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 transition-all cursor-pointer">
-                      <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-                        <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-gray-900">지출 기록</p>
-                        <p className="text-xs text-gray-500">부서 지출</p>
-                      </div>
-                    </div>
-                  </Link>
+                  ))}
                 </div>
               </div>
             )}
@@ -965,182 +884,47 @@ export default function ChurchDetailPage() {
         <div className="mb-5 grid grid-cols-4 gap-1.5">
           <button
             onClick={() => setActiveTab('attendance')}
-            className={`rounded-lg px-2 py-2 text-xs font-bold transition-all whitespace-nowrap text-center ${
+            className={`rounded-xl px-2 py-2.5 text-xs font-semibold transition-all whitespace-nowrap text-center active:scale-95 ${
               activeTab === 'attendance'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                ? 'bg-[#32617d] text-white shadow-[0px_4px_12px_rgba(50,97,125,0.3)]'
+                : 'bg-[#f0ede8] text-[#41484d] hover:bg-[#e5e2dd]'
             }`}
           >
             출석
           </button>
           <button
             onClick={() => setActiveTab('calendar')}
-            className={`rounded-lg px-2 py-2 text-xs font-bold transition-all whitespace-nowrap text-center ${
+            className={`rounded-xl px-2 py-2.5 text-xs font-semibold transition-all whitespace-nowrap text-center active:scale-95 ${
               activeTab === 'calendar'
-                ? 'bg-blue-600 text-white'
-                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                ? 'bg-[#32617d] text-white shadow-[0px_4px_12px_rgba(50,97,125,0.3)]'
+                : 'bg-[#f0ede8] text-[#41484d] hover:bg-[#e5e2dd]'
             }`}
           >
             일정
           </button>
           <Link
             href={`/church/${churchId}/announcements`}
-            className="rounded-lg px-2 py-2 text-xs font-bold transition-all whitespace-nowrap bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 flex items-center justify-center"
+            className="rounded-xl px-2 py-2.5 text-xs font-semibold transition-all whitespace-nowrap bg-[#f0ede8] text-[#41484d] hover:bg-[#e5e2dd] flex items-center justify-center gap-1 active:scale-95"
           >
             공지
+            <svg className="w-2.5 h-2.5 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
           </Link>
           <Link
-            href={`/church/${churchId}/prayers`}
-            className="rounded-lg px-2 py-2 text-xs font-bold transition-all whitespace-nowrap bg-white text-gray-600 hover:bg-gray-50 border border-gray-200 flex items-center justify-center"
+            href={`/church/${churchId}/prayer`}
+            className="rounded-xl px-2 py-2.5 text-xs font-semibold transition-all whitespace-nowrap bg-[#f0ede8] text-[#41484d] hover:bg-[#e5e2dd] flex items-center justify-center gap-1 active:scale-95"
           >
             기도
-          </Link>
-        </div>
-
-        {/* 기존 관리메뉴 섹션 제거 */}
-        {/* 새로운 기능 메뉴 */}
-        <div className="mb-5 hidden">
-          <button
-            onClick={() => setShowManagementMenu(!showManagementMenu)}
-            className="w-full flex items-center justify-between mb-3 px-4 py-3 rounded-lg border-2 border-gray-300 bg-white text-sm font-semibold text-gray-700 hover:border-blue-400 hover:text-blue-600 transition-all shadow-sm"
-          >
-            <span>관리 메뉴</span>
-            <svg
-              className={`w-5 h-5 transition-transform ${showManagementMenu ? 'rotate-180' : ''}`}
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <svg className="w-2.5 h-2.5 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
-          </button>
-
-          {showManagementMenu && (
-            <div className="grid grid-cols-2 gap-3 animate-slide-down">
-              <Link href={`/church/${churchId}/calendar`}>
-                <div className="rounded-xl border border-gray-200 bg-white p-4 hover:border-blue-300 hover:shadow-md transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-blue-100 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-900">교회 달력</p>
-                      <p className="text-xs text-gray-500">일정 관리</p>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-
-              <Link href={`/church/${churchId}/service-schedule`}>
-                <div className="rounded-xl border border-gray-200 bg-white p-4 hover:border-purple-300 hover:shadow-md transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-purple-100 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-900">봉사자</p>
-                      <p className="text-xs text-gray-500">봉사자 배정</p>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-
-              <Link href={`/church/${churchId}/prayer`}>
-                <div className="rounded-xl border border-gray-200 bg-white p-4 hover:border-green-300 hover:shadow-md transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-green-100 flex items-center justify-center">
-                      <span className="text-2xl">🙏</span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-900">기도제목</p>
-                      <p className="text-xs text-gray-500">함께 기도</p>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-
-              <Link href={`/church/${churchId}/offerings`}>
-                <div className="rounded-xl border border-gray-200 bg-white p-4 hover:border-yellow-300 hover:shadow-md transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-yellow-100 flex items-center justify-center">
-                      <span className="text-2xl">💰</span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-900">헌금 관리</p>
-                      <p className="text-xs text-gray-500">헌금 기록</p>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-
-              <Link href={`/church/${churchId}/expenses`}>
-                <div className="rounded-xl border border-gray-200 bg-white p-4 hover:border-red-300 hover:shadow-md transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-red-100 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-900">지출 기록</p>
-                      <p className="text-xs text-gray-500">부서 지출</p>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-
-              <Link href={`/church/${churchId}/announcements`}>
-                <div className="rounded-xl border border-gray-200 bg-white p-4 hover:border-indigo-300 hover:shadow-md transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-lg bg-indigo-100 flex items-center justify-center">
-                      <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
-                      </svg>
-                    </div>
-                    <div>
-                      <p className="text-sm font-bold text-gray-900">공지사항</p>
-                      <p className="text-xs text-gray-500">공지 관리</p>
-                    </div>
-                  </div>
-                </div>
-              </Link>
-
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 opacity-60">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-lg bg-orange-100 flex items-center justify-center">
-                    <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold text-gray-600">성경 읽기</p>
-                    <p className="text-xs text-gray-400">준비 중</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          </Link>
         </div>
 
         {/* 출석 체크 탭 */}
         {activeTab === 'attendance' && (
           <div>
-            {/* 오늘 날짜 */}
-            <div className="mb-4 text-center">
-              <p className="text-xs text-gray-500">오늘</p>
-              <p className="text-lg font-bold text-gray-900">
-                {new Date().toLocaleDateString('ko-KR', {
-                  month: 'long',
-                  day: 'numeric',
-                  weekday: 'long'
-                })}
-              </p>
-            </div>
-
             {/* 출석 체크 버튼 */}
             <div className="mb-5 grid grid-cols-2 gap-3">
               <button
@@ -1148,17 +932,17 @@ export default function ChurchDetailPage() {
                   setAttendanceModalType('student');
                   setShowAttendanceModal(true);
                 }}
-                className="rounded-2xl bg-white p-5 shadow-md hover:shadow-lg active:scale-95 transition-all border-2 border-green-100 hover:border-green-200"
+                className="rounded-2xl bg-[#ffffff] p-5 active:scale-95 transition-all shadow-[0px_4px_20px_rgba(28,28,25,0.07)] hover:shadow-[0px_8px_28px_rgba(28,28,25,0.11)]"
               >
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-green-400 to-green-500 flex items-center justify-center shadow-sm">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #32617d, #4a8aaa)', boxShadow: '0px 4px_12px_rgba(50,97,125,0.3)' }}>
                     <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                     </svg>
                   </div>
                   <div className="text-center">
-                    <div className="text-base font-bold text-gray-900">학생 출석</div>
-                    <div className="text-sm text-gray-500 mt-0.5">
+                    <div className="text-base font-semibold text-[#1c1c19]">학생 출석</div>
+                    <div className="text-sm text-[#41484d] mt-0.5">
                       {students.filter(s => s.type === 'student').length}명
                     </div>
                   </div>
@@ -1169,17 +953,17 @@ export default function ChurchDetailPage() {
                   setAttendanceModalType('teacher');
                   setShowAttendanceModal(true);
                 }}
-                className="rounded-2xl bg-white p-5 shadow-md hover:shadow-lg active:scale-95 transition-all border-2 border-purple-100 hover:border-purple-200"
+                className="rounded-2xl bg-[#ffffff] p-5 active:scale-95 transition-all shadow-[0px_4px_20px_rgba(28,28,25,0.07)] hover:shadow-[0px_8px_28px_rgba(28,28,25,0.11)]"
               >
-                <div className="flex flex-col items-center gap-2">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-400 to-purple-500 flex items-center justify-center shadow-sm">
-                    <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-[#f0ede8] flex items-center justify-center">
+                    <svg className="w-6 h-6 text-[#32617d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                   </div>
                   <div className="text-center">
-                    <div className="text-base font-bold text-gray-900">교사 출석</div>
-                    <div className="text-sm text-gray-500 mt-0.5">
+                    <div className="text-base font-semibold text-[#1c1c19]">교사 출석</div>
+                    <div className="text-sm text-[#41484d] mt-0.5">
                       {students.filter(s => s.type === 'teacher').length}명
                     </div>
                   </div>
@@ -1189,31 +973,31 @@ export default function ChurchDetailPage() {
 
             {/* 출석 현황 그래프 - Chart.js */}
             {(weeklyAttendance.length > 0 || monthlyAttendance.length > 0) && (
-              <div className="mb-5 rounded-xl bg-white border border-gray-200 p-5 shadow-sm">
+              <div className="mb-5 rounded-2xl bg-[#ffffff] p-5 shadow-[0px_4px_20px_rgba(28,28,25,0.06)]">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h3 className="text-sm font-semibold text-gray-900">출석 현황</h3>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <h3 className="text-sm font-semibold text-[#1c1c19]">출석 현황</h3>
+                    <p className="text-xs text-[#41484d] mt-0.5">
                       {viewMode === 'weekly' ? '최근 7일' : '최근 4주'}
                     </p>
                   </div>
-                  <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                  <div className="flex gap-1 bg-[#e5e2dd] rounded-xl p-1">
                     <button
                       onClick={() => setViewMode('weekly')}
-                      className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                         viewMode === 'weekly'
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
+                          ? 'bg-[#32617d] text-white shadow-sm'
+                          : 'text-[#41484d] hover:text-[#1c1c19]'
                       }`}
                     >
                       주간
                     </button>
                     <button
                       onClick={() => setViewMode('monthly')}
-                      className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all ${
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                         viewMode === 'monthly'
-                          ? 'bg-blue-600 text-white shadow-sm'
-                          : 'text-gray-600 hover:text-gray-900'
+                          ? 'bg-[#32617d] text-white shadow-sm'
+                          : 'text-[#41484d] hover:text-[#1c1c19]'
                       }`}
                     >
                       월간
@@ -1235,24 +1019,24 @@ export default function ChurchDetailPage() {
                         {
                           label: '출석',
                           data: (viewMode === 'weekly' ? weeklyAttendance : monthlyAttendance).map(item => item.count),
-                          borderColor: 'rgb(59, 130, 246)',
+                          borderColor: '#32617d',
                           backgroundColor: (context: any) => {
                             const ctx = context.chart.ctx;
                             const gradient = ctx.createLinearGradient(0, 0, 0, 200);
-                            gradient.addColorStop(0, 'rgba(59, 130, 246, 0.2)');
-                            gradient.addColorStop(1, 'rgba(59, 130, 246, 0)');
+                            gradient.addColorStop(0, 'rgba(50, 97, 125, 0.18)');
+                            gradient.addColorStop(1, 'rgba(50, 97, 125, 0)');
                             return gradient;
                           },
-                          borderWidth: 3,
+                          borderWidth: 2.5,
                           fill: true,
                           tension: 0.4,
-                          pointRadius: 5,
-                          pointHoverRadius: 7,
-                          pointBackgroundColor: 'rgb(59, 130, 246)',
-                          pointBorderColor: '#fff',
+                          pointRadius: 4,
+                          pointHoverRadius: 6,
+                          pointBackgroundColor: '#32617d',
+                          pointBorderColor: '#ffffff',
                           pointBorderWidth: 2,
-                          pointHoverBackgroundColor: 'rgb(37, 99, 235)',
-                          pointHoverBorderColor: '#fff',
+                          pointHoverBackgroundColor: '#254d63',
+                          pointHoverBorderColor: '#ffffff',
                         },
                       ],
                     }}
@@ -1264,10 +1048,10 @@ export default function ChurchDetailPage() {
                           display: false,
                         },
                         tooltip: {
-                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                          titleColor: '#1F2937',
-                          bodyColor: '#3B82F6',
-                          borderColor: '#E5E7EB',
+                          backgroundColor: 'rgba(255, 255, 255, 0.97)',
+                          titleColor: '#1c1c19',
+                          bodyColor: '#32617d',
+                          borderColor: 'rgba(193, 199, 205, 0.15)',
                           borderWidth: 1,
                           padding: 12,
                           displayColors: false,
@@ -1318,9 +1102,9 @@ export default function ChurchDetailPage() {
                 </div>
 
                 {/* 총계 */}
-                <div className="mt-4 pt-4 border-t border-gray-200 flex items-center justify-between">
-                  <span className="text-sm text-gray-600">총 출석</span>
-                  <span className="text-lg font-bold text-blue-700">
+                <div className="mt-4 rounded-xl bg-[#f6f3ee] px-4 py-3 flex items-center justify-between">
+                  <span className="text-sm text-[#41484d]">총 출석</span>
+                  <span className="text-lg font-bold text-[#32617d]">
                     {(viewMode === 'weekly' ? weeklyAttendance : monthlyAttendance).reduce((sum, item) => sum + item.count, 0)}명
                   </span>
                 </div>
@@ -1328,19 +1112,13 @@ export default function ChurchDetailPage() {
             )}
 
             {/* 전체 출석 통계 */}
-            <div className="mb-5 rounded-xl bg-gradient-to-br from-blue-50 to-purple-50 border border-blue-100 p-5">
-              <h3 className="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                이번 달 통계
-              </h3>
-              <div className="grid grid-cols-2 gap-3">
-                {/* 교사 평균 출석률 */}
-                <div className="bg-white rounded-xl p-4 shadow-sm">
-                  <div className="text-xs text-gray-600 mb-2">교사 평균 출석률</div>
-                  <div className="flex items-end gap-2">
-                    <span className="text-2xl font-bold text-purple-600">
+            <div className="mb-5 rounded-2xl bg-[#f0ede8] p-4">
+              <h3 className="text-sm font-semibold text-[#1c1c19] mb-3">이번 달 통계</h3>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="bg-[#ffffff] rounded-xl p-4 shadow-[0px_2px_8px_rgba(28,28,25,0.05)]">
+                  <div className="text-xs text-[#41484d] mb-2">교사 평균 출석률</div>
+                  <div className="flex items-end gap-1">
+                    <span className="text-2xl font-bold text-[#32617d]">
                       {students.filter(s => s.type === 'teacher').length > 0
                         ? Math.round(
                             students
@@ -1350,15 +1128,14 @@ export default function ChurchDetailPage() {
                           )
                         : 0}
                     </span>
-                    <span className="text-sm text-gray-500 mb-1">%</span>
+                    <span className="text-sm text-[#41484d] mb-0.5">%</span>
                   </div>
                 </div>
 
-                {/* 학생 평균 출석률 */}
-                <div className="bg-white rounded-xl p-4 shadow-sm">
-                  <div className="text-xs text-gray-600 mb-2">학생 평균 출석률</div>
-                  <div className="flex items-end gap-2">
-                    <span className="text-2xl font-bold text-green-600">
+                <div className="bg-[#ffffff] rounded-xl p-4 shadow-[0px_2px_8px_rgba(28,28,25,0.05)]">
+                  <div className="text-xs text-[#41484d] mb-2">학생 평균 출석률</div>
+                  <div className="flex items-end gap-1">
+                    <span className="text-2xl font-bold text-[#32617d]">
                       {students.filter(s => s.type === 'student').length > 0
                         ? Math.round(
                             students
@@ -1368,33 +1145,31 @@ export default function ChurchDetailPage() {
                           )
                         : 0}
                     </span>
-                    <span className="text-sm text-gray-500 mb-1">%</span>
+                    <span className="text-sm text-[#41484d] mb-0.5">%</span>
                   </div>
                 </div>
 
-                {/* 총 출석 횟수 */}
-                <div className="bg-white rounded-xl p-4 shadow-sm">
-                  <div className="text-xs text-gray-600 mb-2">이번 달 총 출석</div>
-                  <div className="flex items-end gap-2">
-                    <span className="text-2xl font-bold text-blue-600">
+                <div className="bg-[#ffffff] rounded-xl p-4 shadow-[0px_2px_8px_rgba(28,28,25,0.05)]">
+                  <div className="text-xs text-[#41484d] mb-2">이번 달 총 출석</div>
+                  <div className="flex items-end gap-1">
+                    <span className="text-2xl font-bold text-[#32617d]">
                       {attendanceRecords.filter(r => {
                         const recordDate = new Date(r.date);
                         const today = new Date();
                         return recordDate.getMonth() === today.getMonth() && recordDate.getFullYear() === today.getFullYear();
                       }).length}
                     </span>
-                    <span className="text-sm text-gray-500 mb-1">회</span>
+                    <span className="text-sm text-[#41484d] mb-0.5">회</span>
                   </div>
                 </div>
 
-                {/* 전체 누적 출석 */}
-                <div className="bg-white rounded-xl p-4 shadow-sm">
-                  <div className="text-xs text-gray-600 mb-2">전체 누적 출석</div>
-                  <div className="flex items-end gap-2">
-                    <span className="text-2xl font-bold text-gray-900">
+                <div className="bg-[#ffffff] rounded-xl p-4 shadow-[0px_2px_8px_rgba(28,28,25,0.05)]">
+                  <div className="text-xs text-[#41484d] mb-2">전체 누적 출석</div>
+                  <div className="flex items-end gap-1">
+                    <span className="text-2xl font-bold text-[#1c1c19]">
                       {attendanceRecords.length}
                     </span>
-                    <span className="text-sm text-gray-500 mb-1">회</span>
+                    <span className="text-sm text-[#41484d] mb-0.5">회</span>
                   </div>
                 </div>
               </div>
@@ -1427,7 +1202,7 @@ export default function ChurchDetailPage() {
         )}
 
         {/* 인원 관리 탭 */}
-        {activeTab === 'prayer' && (
+        {activeTab === 'members' && (
           <div>
             <button
               onClick={() => setShowAddStudentModal(true)}
@@ -1457,18 +1232,8 @@ export default function ChurchDetailPage() {
                 {/* 타입 필터 */}
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setTypeFilter('all')}
-                    className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
-                      typeFilter === 'all'
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    전체
-                  </button>
-                  <button
                     onClick={() => setTypeFilter('student')}
-                    className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
                       typeFilter === 'student'
                         ? 'bg-green-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
@@ -1478,13 +1243,33 @@ export default function ChurchDetailPage() {
                   </button>
                   <button
                     onClick={() => setTypeFilter('teacher')}
-                    className={`flex-1 py-2 px-4 rounded-lg text-sm font-medium transition-all ${
+                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
                       typeFilter === 'teacher'
                         ? 'bg-purple-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                     }`}
                   >
                     교사
+                  </button>
+                  <button
+                    onClick={() => setTypeFilter('parent')}
+                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                      typeFilter === 'parent'
+                        ? 'bg-orange-500 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    학부모
+                  </button>
+                  <button
+                    onClick={() => setTypeFilter('other')}
+                    className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium transition-all ${
+                      typeFilter === 'other'
+                        ? 'bg-gray-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    기타
                   </button>
                 </div>
               </div>
@@ -1502,7 +1287,7 @@ export default function ChurchDetailPage() {
               <div className="space-y-2">
                 {students
                   .filter(s =>
-                    (typeFilter === 'all' || s.type === typeFilter) &&
+                    s.type === typeFilter &&
                     (searchQuery === '' || s.name.toLowerCase().includes(searchQuery.toLowerCase()))
                   )
                   .map((student) => (
@@ -1570,69 +1355,6 @@ export default function ChurchDetailPage() {
           </div>
         )}
 
-        {/* 기도 탭 */}
-        {activeTab === '기도' && (
-          <div className="space-y-3">
-            {prayers.length === 0 ? (
-              <div className="rounded-xl border border-gray-200 bg-white p-6 text-center">
-                <div className="mb-2 text-4xl">🙏</div>
-                <p className="text-sm font-bold text-gray-900 mb-1">등록된 기도제목이 없습니다</p>
-                <p className="text-xs text-gray-500 mb-3">새로운 기도제목을 등록해보세요</p>
-                <button
-                  onClick={() => setShowPrayerModal(true)}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition-all"
-                >
-                  기도제목 등록
-                </button>
-              </div>
-            ) : (
-              prayers.map((prayer) => (
-                <Link key={prayer.id} href={`/church/${churchId}/prayer/${prayer.id}`}>
-                  <div
-                    className={`rounded-xl border p-4 transition-all cursor-pointer hover:shadow-md ${
-                      prayer.is_answered
-                        ? 'border-green-200 bg-green-50 hover:border-green-300'
-                        : 'border-gray-200 bg-white hover:border-blue-300'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          {prayer.is_answered && (
-                            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-green-600 text-white">
-                              응답됨
-                            </span>
-                          )}
-                          {prayer.is_anonymous ? (
-                            <span className="text-xs font-semibold text-gray-500">익명</span>
-                          ) : prayer.student ? (
-                            <span className="text-xs font-semibold text-blue-600">{prayer.student.name}</span>
-                          ) : (
-                            <span className="text-xs font-semibold text-gray-500">작성자</span>
-                          )}
-                          <span className="text-xs text-gray-400">
-                            {new Date(prayer.created_at).toLocaleDateString('ko-KR')}
-                          </span>
-                        </div>
-                        <h4 className="text-sm font-bold text-gray-900 mb-1">{prayer.title}</h4>
-                        <p className="text-xs text-gray-600 line-clamp-2">{prayer.content}</p>
-                        {prayer.answer_testimony && (
-                          <div className="mt-2 rounded-lg bg-white p-2 border border-green-200">
-                            <p className="text-xs font-semibold text-green-700 mb-1">감사 간증</p>
-                            <p className="text-xs text-gray-700 line-clamp-2">{prayer.answer_testimony}</p>
-                          </div>
-                        )}
-                      </div>
-                      <svg className="w-5 h-5 text-gray-400 ml-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </div>
-                </Link>
-              ))
-            )}
-          </div>
-        )}
       </div>
 
       <Toaster
@@ -1665,54 +1387,46 @@ export default function ChurchDetailPage() {
 
       {/* 인원 등록 모달 - 토스 스타일 바텀시트 */}
       {showAddStudentModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/20 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-t-3xl bg-white p-6 pb-8 animate-slide-up max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#1c1c19]/40 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-t-3xl bg-[#fcf9f4] p-6 pb-10 animate-slide-up max-h-[90vh] overflow-y-auto shadow-[0px_-20px_40px_rgba(28,28,25,0.08)]">
+            {/* 핸들 */}
+            <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-[#c1c7cd]/50" />
+
             <div className="mb-6">
-              <h2 className="text-2xl font-extrabold text-gray-900 mb-1">
+              <h2 className="text-2xl font-bold text-[#1c1c19] mb-1" style={{ fontFamily: 'var(--font-noto-serif)' }}>
                 새 인원 등록
               </h2>
-              <p className="text-sm text-gray-500">
-                정보를 입력해주세요
-              </p>
+              <p className="text-sm text-[#41484d]">정보를 입력해주세요</p>
             </div>
 
-            <form onSubmit={handleAddStudent} className="space-y-4">
-              {/* 교사/학생 선택 */}
+            <form onSubmit={handleAddStudent} className="space-y-5">
+              {/* 구분 선택 */}
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">
-                  구분
-                </label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setNewStudent({ ...newStudent, type: 'student' })}
-                    className={`flex-1 rounded-full px-4 py-3 text-sm font-bold transition-all active:scale-95 ${
-                      newStudent.type === 'student'
-                        ? 'bg-green-600 text-white shadow-[0_4px_14px_0_rgba(22,163,74,0.4)]'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    학생
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setNewStudent({ ...newStudent, type: 'teacher' })}
-                    className={`flex-1 rounded-full px-4 py-3 text-sm font-bold transition-all active:scale-95 ${
-                      newStudent.type === 'teacher'
-                        ? 'bg-purple-600 text-white shadow-[0_4px_14px_0_rgba(147,51,234,0.4)]'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    교사
-                  </button>
+                <label className="mb-2 block text-sm font-medium text-[#41484d]">구분</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {(['student', 'teacher', 'parent', 'other'] as const).map((t) => {
+                    const labels = { student: '학생', teacher: '교사', parent: '학부모', other: '기타' };
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setNewStudent({ ...newStudent, type: t })}
+                        className={`rounded-xl py-2.5 text-sm font-semibold transition-all active:scale-95 ${
+                          newStudent.type === t
+                            ? 'bg-[#32617d] text-white shadow-[0px_4px_14px_rgba(50,97,125,0.35)]'
+                            : 'bg-[#e5e2dd] text-[#41484d] hover:bg-[#dedad4]'
+                        }`}
+                      >
+                        {labels[t]}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               {/* 사진 업로드 */}
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">
-                  사진
-                </label>
+                <label className="mb-2 block text-sm font-medium text-[#41484d]">사진</label>
                 <ImageUpload
                   onImageSelect={(file) => setSelectedPhoto(file)}
                   onImageRemove={() => setSelectedPhoto(null)}
@@ -1720,65 +1434,56 @@ export default function ChurchDetailPage() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">
-                  이름
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-[#41484d]">이름</label>
                 <input
                   type="text"
                   value={newStudent.name}
                   onChange={(e) => setNewStudent({ ...newStudent, name: e.target.value })}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base font-semibold text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
+                  className="w-full rounded-xl bg-[#e5e2dd] px-4 py-3.5 text-base font-medium text-[#1c1c19] placeholder:text-[#41484d]/50 focus:outline-none focus:ring-2 focus:ring-[#32617d]/30"
                   placeholder="예: 홍길동"
                   required
                 />
               </div>
+
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">
-                  전화번호 (선택)
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-[#41484d]">전화번호 <span className="text-[#41484d]/50 font-normal">선택</span></label>
                 <input
                   type="tel"
                   value={newStudent.phone}
                   onChange={(e) => setNewStudent({ ...newStudent, phone: e.target.value })}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
+                  className="w-full rounded-xl bg-[#e5e2dd] px-4 py-3.5 text-base text-[#1c1c19] placeholder:text-[#41484d]/50 focus:outline-none focus:ring-2 focus:ring-[#32617d]/30"
                   placeholder="010-1234-5678"
                 />
               </div>
+
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">
-                  생년월일 (선택)
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-[#41484d]">생년월일 <span className="text-[#41484d]/50 font-normal">선택</span></label>
                 <input
                   type="date"
                   value={newStudent.birthdate}
                   onChange={(e) => setNewStudent({ ...newStudent, birthdate: e.target.value })}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-900 focus:border-blue-600 focus:outline-none"
+                  className="w-full rounded-xl bg-[#e5e2dd] px-4 py-3.5 text-base text-[#1c1c19] focus:outline-none focus:ring-2 focus:ring-[#32617d]/30"
                 />
                 {newStudent.birthdate && (
-                  <p className="mt-1 text-xs text-gray-500">
-                    만 {calculateAge(newStudent.birthdate)}세
-                  </p>
+                  <p className="mt-1.5 text-xs text-[#41484d]">만 {calculateAge(newStudent.birthdate)}세</p>
                 )}
               </div>
+
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">
-                  학년 (선택)
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-[#41484d]">학년 <span className="text-[#41484d]/50 font-normal">선택</span></label>
                 <input
                   type="text"
                   value={newStudent.grade}
                   onChange={(e) => setNewStudent({ ...newStudent, grade: e.target.value })}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
+                  className="w-full rounded-xl bg-[#e5e2dd] px-4 py-3.5 text-base text-[#1c1c19] placeholder:text-[#41484d]/50 focus:outline-none focus:ring-2 focus:ring-[#32617d]/30"
                   placeholder="중1"
                 />
               </div>
 
-              {/* 출석 요일 선택 */}
+              {/* 출석 요일 */}
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">
-                  출석 요일 선택
-                </label>
-                <div className="grid grid-cols-7 gap-2">
+                <label className="mb-2 block text-sm font-medium text-[#41484d]">출석 요일</label>
+                <div className="grid grid-cols-7 gap-1.5">
                   {[
                     { value: '0', label: '일' },
                     { value: '1', label: '월' },
@@ -1786,28 +1491,26 @@ export default function ChurchDetailPage() {
                     { value: '3', label: '수' },
                     { value: '4', label: '목' },
                     { value: '5', label: '금' },
-                    { value: '6', label: '토' }
+                    { value: '6', label: '토' },
                   ].map((day) => (
                     <button
                       key={day.value}
                       type="button"
                       onClick={() => toggleAttendanceDay(day.value)}
-                      className={`rounded-lg py-3 text-sm font-bold transition-all active:scale-95 ${
+                      className={`rounded-xl py-2.5 text-sm font-semibold transition-all active:scale-95 ${
                         newStudent.attendance_days?.includes(day.value)
-                          ? 'bg-blue-600 text-white shadow-md'
-                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                          ? 'bg-[#32617d] text-white shadow-[0px_4px_10px_rgba(50,97,125,0.3)]'
+                          : 'bg-[#e5e2dd] text-[#41484d] hover:bg-[#dedad4]'
                       }`}
                     >
                       {day.label}
                     </button>
                   ))}
                 </div>
-                <p className="mt-2 text-xs text-gray-500">
-                  선택한 요일에만 출석이 가능합니다
-                </p>
+                <p className="mt-2 text-xs text-[#41484d]/60">선택한 요일에만 출석이 가능합니다</p>
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-1">
                 <button
                   type="button"
                   onClick={() => {
@@ -1815,13 +1518,14 @@ export default function ChurchDetailPage() {
                     setNewStudent({ name: '', phone: '', birthdate: '', grade: '', type: 'student', attendance_days: ['0'] });
                     setSelectedPhoto(null);
                   }}
-                  className="flex-1 rounded-full border-2 border-gray-200 py-3.5 text-base font-bold text-gray-700 hover:bg-gray-50 active:scale-95 transition-all"
+                  className="flex-1 rounded-2xl bg-[#f0ede8] py-4 text-base font-semibold text-[#1c1c19] hover:bg-[#e5e2dd] active:scale-95 transition-all"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-full bg-blue-600 py-3.5 text-base font-bold text-white hover:bg-blue-700 active:scale-95 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.4)]"
+                  className="flex-1 rounded-2xl py-4 text-base font-semibold text-white active:scale-95 transition-all"
+                  style={{ background: 'linear-gradient(135deg, #32617d, #4a8aaa)', boxShadow: '0px 8px 20px rgba(50,97,125,0.35)' }}
                 >
                   등록하기
                 </button>
@@ -1831,82 +1535,71 @@ export default function ChurchDetailPage() {
         </div>
       )}
 
-      {/* 학생 편집 모달 */}
+      {/* 인원 편집 모달 */}
       {showEditStudentModal && editingStudent && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/20 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-t-3xl bg-white p-6 pb-8 animate-slide-up max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#1c1c19]/40 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-t-3xl bg-[#fcf9f4] p-6 pb-10 animate-slide-up max-h-[90vh] overflow-y-auto shadow-[0px_-20px_40px_rgba(28,28,25,0.08)]">
+            {/* 핸들 */}
+            <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-[#c1c7cd]/50" />
+
             <div className="mb-6">
-              <h2 className="text-2xl font-extrabold text-gray-900 mb-1">
+              <h2 className="text-2xl font-bold text-[#1c1c19] mb-1" style={{ fontFamily: 'var(--font-noto-serif)' }}>
                 정보 수정
               </h2>
-              <p className="text-sm text-gray-500">
-                {editingStudent.name}님의 정보를 수정합니다
-              </p>
+              <p className="text-sm text-[#41484d]">{editingStudent.name}님의 정보를 수정합니다</p>
             </div>
 
-            <form onSubmit={handleUpdateStudent} className="space-y-4">
-              {/* 교사/학생 선택 */}
+            <form onSubmit={handleUpdateStudent} className="space-y-5">
+              {/* 구분 선택 */}
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">
-                  구분
-                </label>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditingStudent({ ...editingStudent, type: 'student' })}
-                    className={`flex-1 rounded-full px-4 py-3 text-sm font-bold transition-all active:scale-95 ${
-                      editingStudent.type === 'student'
-                        ? 'bg-green-600 text-white shadow-[0_4px_14px_0_rgba(22,163,74,0.4)]'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    학생
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditingStudent({ ...editingStudent, type: 'teacher' })}
-                    className={`flex-1 rounded-full px-4 py-3 text-sm font-bold transition-all active:scale-95 ${
-                      editingStudent.type === 'teacher'
-                        ? 'bg-purple-600 text-white shadow-[0_4px_14px_0_rgba(147,51,234,0.4)]'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    교사
-                  </button>
+                <label className="mb-2 block text-sm font-medium text-[#41484d]">구분</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {(['student', 'teacher', 'parent', 'other'] as const).map((t) => {
+                    const labels = { student: '학생', teacher: '교사', parent: '학부모', other: '기타' };
+                    return (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => setEditingStudent({ ...editingStudent, type: t })}
+                        className={`rounded-xl py-2.5 text-sm font-semibold transition-all active:scale-95 ${
+                          editingStudent.type === t
+                            ? 'bg-[#32617d] text-white shadow-[0px_4px_14px_rgba(50,97,125,0.35)]'
+                            : 'bg-[#e5e2dd] text-[#41484d] hover:bg-[#dedad4]'
+                        }`}
+                      >
+                        {labels[t]}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">
-                  이름
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-[#41484d]">이름</label>
                 <input
                   type="text"
                   value={editingStudent.name}
                   onChange={(e) => setEditingStudent({ ...editingStudent, name: e.target.value })}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base font-semibold text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
+                  className="w-full rounded-xl bg-[#e5e2dd] px-4 py-3.5 text-base font-medium text-[#1c1c19] placeholder:text-[#41484d]/50 focus:outline-none focus:ring-2 focus:ring-[#32617d]/30"
                   placeholder="예: 홍길동"
                   required
                 />
               </div>
+
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">
-                  전화번호 (선택)
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-[#41484d]">전화번호 <span className="text-[#41484d]/50 font-normal">선택</span></label>
                 <input
                   type="tel"
                   value={editingStudent.phone || ''}
                   onChange={(e) => setEditingStudent({ ...editingStudent, phone: e.target.value })}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
+                  className="w-full rounded-xl bg-[#e5e2dd] px-4 py-3.5 text-base text-[#1c1c19] placeholder:text-[#41484d]/50 focus:outline-none focus:ring-2 focus:ring-[#32617d]/30"
                   placeholder="010-1234-5678"
                 />
               </div>
 
               {/* 사진 업로드 */}
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">
-                  사진 변경
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-[#41484d]">사진 변경</label>
                 <ImageUpload
                   currentImageUrl={editingStudent.photo_url || undefined}
                   onImageSelect={(file) => setSelectedPhoto(file)}
@@ -1915,60 +1608,55 @@ export default function ChurchDetailPage() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">
-                  생년월일 (선택)
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-[#41484d]">생년월일 <span className="text-[#41484d]/50 font-normal">선택</span></label>
                 <input
                   type="date"
                   value={editingStudent.birthdate || ''}
                   onChange={(e) => setEditingStudent({ ...editingStudent, birthdate: e.target.value })}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-900 focus:border-blue-600 focus:outline-none"
+                  className="w-full rounded-xl bg-[#e5e2dd] px-4 py-3.5 text-base text-[#1c1c19] focus:outline-none focus:ring-2 focus:ring-[#32617d]/30"
                 />
                 {editingStudent.birthdate && (
-                  <p className="mt-1 text-xs text-gray-500">
-                    만 {calculateAge(editingStudent.birthdate)}세
-                  </p>
+                  <p className="mt-1.5 text-xs text-[#41484d]">만 {calculateAge(editingStudent.birthdate)}세</p>
                 )}
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">
-                  학년 (선택)
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-[#41484d]">학년 <span className="text-[#41484d]/50 font-normal">선택</span></label>
                 <input
                   type="text"
                   value={editingStudent.grade || ''}
                   onChange={(e) => setEditingStudent({ ...editingStudent, grade: e.target.value })}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
+                  className="w-full rounded-xl bg-[#e5e2dd] px-4 py-3.5 text-base text-[#1c1c19] placeholder:text-[#41484d]/50 focus:outline-none focus:ring-2 focus:ring-[#32617d]/30"
                   placeholder="중1"
                 />
               </div>
+
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">
-                  메모 (선택)
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-[#41484d]">메모 <span className="text-[#41484d]/50 font-normal">선택</span></label>
                 <textarea
-                  value={editingStudent.notes || ''}
-                  onChange={(e) => setEditingStudent({ ...editingStudent, notes: e.target.value })}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none resize-none"
+                  value={editingStudent.memo || ''}
+                  onChange={(e) => setEditingStudent({ ...editingStudent, memo: e.target.value })}
+                  className="w-full rounded-xl bg-[#e5e2dd] px-4 py-3.5 text-base text-[#1c1c19] placeholder:text-[#41484d]/50 focus:outline-none focus:ring-2 focus:ring-[#32617d]/30 resize-none"
                   placeholder="특이사항, 알레르기, 연락처 등을 메모하세요"
                   rows={4}
                 />
               </div>
-              <div className="flex gap-3 pt-2">
+
+              <div className="flex gap-3 pt-1">
                 <button
                   type="button"
                   onClick={() => {
                     setShowEditStudentModal(false);
                     setEditingStudent(null);
                   }}
-                  className="flex-1 rounded-full border-2 border-gray-200 py-3.5 text-base font-bold text-gray-700 hover:bg-gray-50 active:scale-95 transition-all"
+                  className="flex-1 rounded-2xl bg-[#f0ede8] py-4 text-base font-semibold text-[#1c1c19] hover:bg-[#e5e2dd] active:scale-95 transition-all"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-full bg-blue-600 py-3.5 text-base font-bold text-white hover:bg-blue-700 active:scale-95 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.4)]"
+                  className="flex-1 rounded-2xl py-4 text-base font-semibold text-white active:scale-95 transition-all"
+                  style={{ background: 'linear-gradient(135deg, #32617d, #4a8aaa)', boxShadow: '0px 8px 20px rgba(50,97,125,0.35)' }}
                 >
                   저장하기
                 </button>

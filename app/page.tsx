@@ -121,9 +121,10 @@ export default function Home() {
       for (const church of churchList) {
         // 총 학생 수
         const { data: students, error: studentsError } = await supabase
-          .from('students')
+          .from('members')
           .select('id')
-          .eq('church_id', church.id);
+          .eq('church_id', church.id)
+          .in('type', ['student', 'teacher']);
 
         if (studentsError) throw studentsError;
 
@@ -356,18 +357,21 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#fcf9f4]">
       <Toaster position="top-center" />
       {/* 상단 헤더 */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="mx-auto max-w-md px-5 py-3">
+      <div className="bg-[#fcf9f4]">
+        <div className="mx-auto max-w-md px-5 pt-5 pb-3">
           <div className="flex items-center justify-between">
-            <h1 className="text-base font-bold text-gray-900">
-              {userName}님 🙏
-            </h1>
+            <div>
+              <p className="text-xs text-[#41484d] font-medium mb-0.5">안녕하세요</p>
+              <h1 className="text-xl font-bold text-[#1c1c19]" style={{ fontFamily: 'var(--font-noto-serif)' }}>
+                {userName}님 🙏
+              </h1>
+            </div>
             <Link href="/settings">
-              <button className="rounded-lg p-2 hover:bg-gray-100 transition-colors">
-                <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <button className="rounded-xl p-2 hover:bg-[#f0ede8] transition-colors">
+                <svg className="w-5 h-5 text-[#41484d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
@@ -381,28 +385,27 @@ export default function Home() {
       <div className="mx-auto max-w-md px-5 py-5">
         {/* 오늘의 말씀 */}
         {dailyVerse && (
-          <div className="mb-5 rounded-2xl bg-gradient-to-br from-amber-50 via-orange-50 to-amber-50 border border-amber-200 p-5 shadow-sm">
-            <div className="flex items-center gap-2 mb-3">
-              <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-              </svg>
-              <span className="text-sm font-bold text-amber-800">오늘의 말씀</span>
+          <div className="mb-5 rounded-2xl bg-[#ffffff] overflow-hidden shadow-[0px_4px_20px_rgba(28,28,25,0.06)] flex">
+            {/* Gold 액센트 바 */}
+            <div className="w-1 shrink-0 bg-[#c9a84c]" />
+            <div className="p-5 flex-1">
+              <p className="text-xs font-medium text-[#c9a84c] mb-3 tracking-wide uppercase">오늘의 말씀</p>
+              <p className="text-[15px] text-[#1c1c19] leading-relaxed mb-3" style={{ fontFamily: 'var(--font-noto-serif)' }}>
+                {dailyVerse.text}
+              </p>
+              <p className="text-xs font-medium text-[#41484d] text-right">
+                — {dailyVerse.reference}
+              </p>
             </div>
-            <p className="text-[15px] text-gray-800 leading-relaxed mb-3 font-medium">
-              {dailyVerse.text}
-            </p>
-            <p className="text-xs font-semibold text-amber-700 text-right">
-              - {dailyVerse.reference}
-            </p>
           </div>
         )}
 
         {/* 최근 공지사항 */}
         {recentAnnouncements.length > 0 && (
-          <div className="mb-5 rounded-xl bg-white border border-gray-200 p-4">
+          <div className="mb-5 rounded-2xl bg-[#ffffff] p-4 shadow-[0px_4px_20px_rgba(28,28,25,0.06)]">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-700">최근 공지</h3>
-              <span className="text-xs text-gray-500">{recentAnnouncements.length}개</span>
+              <h3 className="text-sm font-semibold text-[#1c1c19]">최근 공지</h3>
+              <span className="text-xs text-[#41484d]">{recentAnnouncements.length}개</span>
             </div>
             <div className="space-y-2">
               {recentAnnouncements.map((announcement) => {
@@ -412,32 +415,32 @@ export default function Home() {
                     key={announcement.id}
                     href={`/church/${announcement.church_id}/announcements`}
                   >
-                    <div className={`p-3 rounded-lg border transition-all hover:border-blue-300 ${
-                      announcement.is_important ? 'bg-red-50 border-red-200' :
-                      announcement.is_pinned ? 'bg-blue-50 border-blue-200' :
-                      'bg-gray-50 border-gray-200'
+                    <div className={`p-3 rounded-xl transition-all active:scale-[0.99] ${
+                      announcement.is_important ? 'bg-[#fff4f2]' :
+                      announcement.is_pinned ? 'bg-[#f0f6f8]' :
+                      'bg-[#f6f3ee]'
                     }`}>
                       <div className="flex items-start gap-2 mb-1">
                         {announcement.is_pinned && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-blue-600 text-white">
+                          <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-[#32617d] text-white">
                             고정
                           </span>
                         )}
                         {announcement.is_important && (
-                          <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-red-600 text-white">
+                          <span className="px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-[#c0392b] text-white">
                             중요
                           </span>
                         )}
-                        <span className="text-xs font-semibold text-gray-900 flex-1 truncate">
+                        <span className="text-xs font-semibold text-[#1c1c19] flex-1 truncate">
                           {announcement.title}
                         </span>
                       </div>
-                      <p className="text-xs text-gray-600 line-clamp-2 mb-1">
+                      <p className="text-xs text-[#41484d] line-clamp-2 mb-1">
                         {announcement.content}
                       </p>
-                      <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                      <div className="flex items-center gap-2 text-[10px] text-[#41484d]/60">
                         {church && <span>{church.name}</span>}
-                        <span>•</span>
+                        <span>·</span>
                         <span>
                           {new Date(announcement.created_at).toLocaleDateString('ko-KR', {
                             month: 'short',
@@ -455,28 +458,27 @@ export default function Home() {
 
         {/* 이번 주 일정 서머리 */}
         {allWeeklyEvents.length > 0 && (
-          <div className="mb-5 rounded-xl bg-white border border-gray-200 p-4">
+          <div className="mb-5 rounded-2xl bg-[#ffffff] p-4 shadow-[0px_4px_20px_rgba(28,28,25,0.06)]">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-gray-700">이번 주 일정</h3>
-              <span className="text-xs text-gray-500">{allWeeklyEvents.length}개</span>
+              <h3 className="text-sm font-semibold text-[#1c1c19]">이번 주 일정</h3>
+              <span className="text-xs text-[#41484d]">{allWeeklyEvents.length}개</span>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {allWeeklyEvents.slice(0, 5).map((event) => {
                 const eventDate = new Date(event.start_datetime);
                 const today = new Date();
                 const isToday = eventDate.toDateString() === today.toDateString();
-
                 const church = churches.find(c => c.id === event.church_id);
 
                 return (
-                  <div key={event.id} className="flex items-center gap-2 text-xs">
-                    <span className={`${isToday ? 'text-blue-600 font-semibold' : 'text-gray-500'}`}>
+                  <div key={event.id} className={`flex items-center gap-2 text-xs rounded-lg px-2 py-1.5 ${isToday ? 'bg-[#f0f6f8]' : ''}`}>
+                    <span className={`shrink-0 font-medium ${isToday ? 'text-[#32617d]' : 'text-[#41484d]'}`}>
                       {eventDate.toLocaleDateString('ko-KR', { month: 'short', day: 'numeric', weekday: 'short' })}
                     </span>
-                    <span className="text-gray-400">•</span>
-                    <span className="text-gray-900 font-medium truncate flex-1">{event.title}</span>
+                    <span className="text-[#41484d]/40">·</span>
+                    <span className="text-[#1c1c19] font-medium truncate flex-1">{event.title}</span>
                     {church && (
-                      <span className="text-gray-400 text-[10px]">{church.name}</span>
+                      <span className="text-[#41484d]/50 text-[10px] shrink-0">{church.name}</span>
                     )}
                   </div>
                 );
@@ -488,21 +490,21 @@ export default function Home() {
         {/* 교회/모임 목록 - 메인 컨텐츠 */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-3">
-            <div>
-              <h2 className="text-sm font-semibold text-gray-700">내 교회/모임&nbsp;<span className="text-xs text-gray-500 mt-0.5">{churches.length}개</span></h2>
-            </div>
+            <h2 className="text-sm font-semibold text-[#1c1c19]">
+              내 교회/모임
+              <span className="ml-1.5 text-xs font-normal text-[#41484d]">{churches.length}개</span>
+            </h2>
           </div>
 
           {churches.length === 0 ? (
-            <div className="rounded-xl border border-gray-200 bg-white p-6 text-center">
-              <div className="mb-2 text-4xl">🏛️</div>
-              <p className="text-sm font-semibold text-gray-900 mb-1">아직 교회가 없어요</p>
-              <p className="text-xs text-gray-500 mb-3">
-                첫 번째 교회를 만들고 출석 관리를 시작해보세요
-              </p>
+            <div className="rounded-2xl bg-[#ffffff] p-8 text-center shadow-[0px_4px_20px_rgba(28,28,25,0.06)]">
+              <div className="mb-3 text-4xl">🏛️</div>
+              <p className="text-sm font-semibold text-[#1c1c19] mb-1">아직 교회가 없어요</p>
+              <p className="text-xs text-[#41484d] mb-4">첫 번째 교회를 만들고 출석 관리를 시작해보세요</p>
               <button
                 onClick={() => setShowCreateModal(true)}
-                className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700 active:scale-95 transition-all"
+                className="rounded-2xl px-6 py-2.5 text-sm font-semibold text-white active:scale-95 transition-all"
+                style={{ background: 'linear-gradient(135deg, #32617d, #4a8aaa)', boxShadow: '0px 6px_16px_rgba(50,97,125,0.3)' }}
               >
                 지금 시작하기
               </button>
@@ -512,21 +514,15 @@ export default function Home() {
               {churches.map((church) => {
                 const stats = churchStats.get(church.id);
                 return (
-                  <div key={church.id} className="rounded-xl border border-gray-200 bg-white p-4 hover:border-blue-300 hover:shadow-sm transition-all">
+                  <div key={church.id} className="rounded-2xl bg-[#ffffff] p-4 shadow-[0px_4px_20px_rgba(28,28,25,0.06)] hover:shadow-[0px_8px_28px_rgba(28,28,25,0.10)] transition-shadow">
                     <div className="flex items-start justify-between mb-3">
                       <Link href={`/church/${church.id}`} className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <div>
-                            <h4 className="text-base font-semibold text-gray-900 px-1">
-                              {church.name}
-                            </h4>
-                            {church.description && (
-                              <p className="text-xs text-gray-600 mt-0.5">
-                                {church.description}
-                              </p>
-                            )}
-                          </div>
-                        </div>
+                        <h4 className="text-base font-semibold text-[#1c1c19]">
+                          {church.name}
+                        </h4>
+                        {church.description && (
+                          <p className="text-xs text-[#41484d] mt-0.5">{church.description}</p>
+                        )}
                       </Link>
 
                       {/* 팝다운 메뉴 */}
@@ -537,7 +533,7 @@ export default function Home() {
                             e.stopPropagation();
                             setOpenMenuId(openMenuId === church.id ? null : church.id);
                           }}
-                          className="ml-2 rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                          className="ml-2 rounded-xl p-1.5 text-[#41484d] hover:bg-[#f0ede8] transition-colors"
                         >
                           <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"/>
@@ -545,7 +541,7 @@ export default function Home() {
                         </button>
 
                         {openMenuId === church.id && (
-                          <div className="absolute right-0 top-8 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10 min-w-[120px]">
+                          <div className="absolute right-0 top-9 bg-[#ffffff] rounded-2xl py-1.5 z-10 min-w-[120px] shadow-[0px_8px_24px_rgba(28,28,25,0.12)]">
                             <button
                               onClick={(e) => {
                                 e.preventDefault();
@@ -554,9 +550,9 @@ export default function Home() {
                                 setShowEditModal(true);
                                 setOpenMenuId(null);
                               }}
-                              className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                              className="w-full px-4 py-2.5 text-left text-sm text-[#1c1c19] hover:bg-[#f6f3ee] flex items-center gap-2 transition-colors"
                             >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <svg className="w-4 h-4 text-[#41484d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                               </svg>
                               수정
@@ -567,7 +563,7 @@ export default function Home() {
                                 e.stopPropagation();
                                 handleDeleteChurch(church.id);
                               }}
-                              className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                              className="w-full px-4 py-2.5 text-left text-sm text-[#c0392b] hover:bg-[#fff4f2] flex items-center gap-2 transition-colors"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -582,13 +578,13 @@ export default function Home() {
                     {/* 통계 정보 */}
                     {stats && (
                       <div className="flex gap-2 mb-3">
-                        <div className="flex-1 rounded-lg bg-blue-50 px-3 py-2 text-center">
-                          <p className="text-[10px] text-blue-600 mb-0.5">이번 주 출석</p>
-                          <p className="text-lg font-bold text-blue-600">{stats.thisWeekAttendance}</p>
+                        <div className="flex-1 rounded-xl bg-[#f0ede8] px-3 py-2.5 text-center">
+                          <p className="text-[10px] text-[#41484d] mb-0.5">이번 주 출석</p>
+                          <p className="text-lg font-bold text-[#32617d]">{stats.thisWeekAttendance}</p>
                         </div>
-                        <div className="flex-1 rounded-lg bg-gray-50 px-3 py-2 text-center">
-                          <p className="text-[10px] text-gray-600 mb-0.5">총 인원</p>
-                          <p className="text-lg font-bold text-gray-700">{stats.totalStudents}</p>
+                        <div className="flex-1 rounded-xl bg-[#f0ede8] px-3 py-2.5 text-center">
+                          <p className="text-[10px] text-[#41484d] mb-0.5">총 인원</p>
+                          <p className="text-lg font-bold text-[#1c1c19]">{stats.totalStudents}</p>
                         </div>
                       </div>
                     )}
@@ -596,31 +592,31 @@ export default function Home() {
                     {/* 바로가기 버튼 */}
                     <div className="grid grid-cols-4 gap-2">
                       <Link href={`/church/${church.id}`}>
-                        <button className="w-full flex flex-col items-center gap-1 p-2 rounded-lg bg-gray-50 hover:bg-blue-50 transition-colors">
-                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button className="w-full flex flex-col items-center gap-1 p-2.5 rounded-xl bg-[#f6f3ee] hover:bg-[#ebe8e3] transition-colors active:scale-95">
+                          <svg className="w-4 h-4 text-[#32617d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
                           </svg>
-                          <span className="text-[9px] text-gray-600 font-medium">출석</span>
+                          <span className="text-[9px] text-[#41484d] font-medium">출석</span>
                         </button>
                       </Link>
                       <Link href={`/church/${church.id}/prayer`}>
-                        <button className="w-full flex flex-col items-center gap-1 p-2 rounded-lg bg-gray-50 hover:bg-green-50 transition-colors">
+                        <button className="w-full flex flex-col items-center gap-1 p-2.5 rounded-xl bg-[#f6f3ee] hover:bg-[#ebe8e3] transition-colors active:scale-95">
                           <span className="text-sm">🙏</span>
-                          <span className="text-[9px] text-gray-600 font-medium">기도</span>
+                          <span className="text-[9px] text-[#41484d] font-medium">기도</span>
                         </button>
                       </Link>
                       <Link href={`/church/${church.id}/calendar`}>
-                        <button className="w-full flex flex-col items-center gap-1 p-2 rounded-lg bg-gray-50 hover:bg-purple-50 transition-colors">
-                          <svg className="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <button className="w-full flex flex-col items-center gap-1 p-2.5 rounded-xl bg-[#f6f3ee] hover:bg-[#ebe8e3] transition-colors active:scale-95">
+                          <svg className="w-4 h-4 text-[#32617d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
-                          <span className="text-[9px] text-gray-600 font-medium">일정</span>
+                          <span className="text-[9px] text-[#41484d] font-medium">일정</span>
                         </button>
                       </Link>
                       <Link href={`/church/${church.id}/offerings`}>
-                        <button className="w-full flex flex-col items-center gap-1 p-2 rounded-lg bg-gray-50 hover:bg-orange-50 transition-colors">
+                        <button className="w-full flex flex-col items-center gap-1 p-2.5 rounded-xl bg-[#f6f3ee] hover:bg-[#ebe8e3] transition-colors active:scale-95">
                           <span className="text-sm">💰</span>
-                          <span className="text-[9px] text-gray-600 font-medium">헌금</span>
+                          <span className="text-[9px] text-[#41484d] font-medium">헌금</span>
                         </button>
                       </Link>
                     </div>
@@ -638,79 +634,70 @@ export default function Home() {
       </div>
 
       {/* 하단 고정 버튼 */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 pb-5">
+      <div className="fixed bottom-0 left-0 right-0 p-3 pb-6" style={{ background: 'linear-gradient(to top, rgba(252,249,244,1) 70%, rgba(252,249,244,0))', backdropFilter: 'blur(8px)' }}>
         <div className="mx-auto max-w-md">
           <button
             onClick={() => setShowCreateModal(true)}
-            className="w-full rounded-lg bg-blue-600 py-3 text-sm font-bold text-white hover:bg-blue-700 active:scale-[0.98] transition-all"
+            className="w-full rounded-2xl py-4 text-sm font-bold text-white active:scale-[0.98] transition-all"
+            style={{ background: 'linear-gradient(135deg, #32617d, #4a8aaa)', boxShadow: '0px 8px_20px_rgba(50,97,125,0.35)' }}
           >
             새 교회 만들기
           </button>
         </div>
       </div>
 
-      {/* 생성 모달 - 토스 스타일 */}
+      {/* 생성 모달 */}
       {showCreateModal && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/20 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-[#1c1c19]/40 backdrop-blur-sm"
           onClick={() => setShowCreateModal(false)}
         >
           <div
-            className="w-full max-w-md rounded-t-3xl bg-white p-6 pb-8 animate-slide-up"
+            className="w-full max-w-md rounded-t-3xl bg-[#fcf9f4] p-6 pb-10 animate-slide-up shadow-[0px_-20px_40px_rgba(28,28,25,0.08)]"
             onClick={(e) => e.stopPropagation()}
           >
+            <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-[#c1c7cd]/50" />
             <div className="mb-6">
-              <h2 className="text-2xl font-extrabold text-gray-900 mb-1">
+              <h2 className="text-2xl font-bold text-[#1c1c19] mb-1" style={{ fontFamily: 'var(--font-noto-serif)' }}>
                 새 교회 만들기
               </h2>
-              <p className="text-sm text-gray-500">
-                교회 이름과 설명을 입력해주세요
-              </p>
+              <p className="text-sm text-[#41484d]">교회 이름과 설명을 입력해주세요</p>
             </div>
 
-            <form onSubmit={handleCreateChurch} className="space-y-4">
+            <form onSubmit={handleCreateChurch} className="space-y-5">
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">
-                  이름
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-[#41484d]">이름</label>
                 <input
                   type="text"
                   value={newChurchName}
                   onChange={(e) => setNewChurchName(e.target.value)}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base font-semibold text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
+                  className="w-full rounded-xl bg-[#e5e2dd] px-4 py-3.5 text-base font-medium text-[#1c1c19] placeholder:text-[#41484d]/50 focus:outline-none focus:ring-2 focus:ring-[#32617d]/30"
                   placeholder="예: 사랑의교회 청소년부"
                   required
                 />
               </div>
-
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">
-                  설명 (선택)
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-[#41484d]">설명 <span className="font-normal text-[#41484d]/50">선택</span></label>
                 <textarea
                   value={newChurchDesc}
                   onChange={(e) => setNewChurchDesc(e.target.value)}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none resize-none"
+                  className="w-full rounded-xl bg-[#e5e2dd] px-4 py-3.5 text-base text-[#1c1c19] placeholder:text-[#41484d]/50 focus:outline-none focus:ring-2 focus:ring-[#32617d]/30 resize-none"
                   placeholder="간단한 설명을 입력하세요"
                   rows={3}
                 />
               </div>
-
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-1">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    setNewChurchName('');
-                    setNewChurchDesc('');
-                  }}
-                  className="flex-1 rounded-full border-2 border-gray-200 py-3.5 text-base font-bold text-gray-700 hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
+                  onClick={() => { setShowCreateModal(false); setNewChurchName(''); setNewChurchDesc(''); }}
+                  className="flex-1 rounded-2xl bg-[#f0ede8] py-4 text-base font-semibold text-[#1c1c19] hover:bg-[#e5e2dd] active:scale-95 transition-all"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-full bg-blue-600 py-3.5 text-base font-bold text-white hover:bg-blue-700 active:scale-95 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.4)]"
+                  className="flex-1 rounded-2xl py-4 text-base font-semibold text-white active:scale-95 transition-all"
+                  style={{ background: 'linear-gradient(135deg, #32617d, #4a8aaa)', boxShadow: '0px 8px 20px rgba(50,97,125,0.35)' }}
                 >
                   만들기
                 </button>
@@ -723,87 +710,66 @@ export default function Home() {
       {/* 교회 수정 모달 */}
       {showEditModal && editingChurch && (
         <div
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/20 backdrop-blur-sm"
-          onClick={() => {
-            setShowEditModal(false);
-            setEditingChurch(null);
-          }}
+          className="fixed inset-0 z-50 flex items-end justify-center bg-[#1c1c19]/40 backdrop-blur-sm"
+          onClick={() => { setShowEditModal(false); setEditingChurch(null); }}
         >
           <div
-            className="w-full max-w-md rounded-t-3xl bg-white p-6 pb-8 animate-slide-up"
+            className="w-full max-w-md rounded-t-3xl bg-[#fcf9f4] p-6 pb-10 animate-slide-up shadow-[0px_-20px_40px_rgba(28,28,25,0.08)]"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900">모임 수정</h3>
-              <button
-                onClick={() => {
-                  setShowEditModal(false);
-                  setEditingChurch(null);
-                }}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+            <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-[#c1c7cd]/50" />
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold text-[#1c1c19] mb-1" style={{ fontFamily: 'var(--font-noto-serif)' }}>
+                모임 수정
+              </h2>
+              <p className="text-sm text-[#41484d]">{editingChurch.name}</p>
             </div>
 
-            <form onSubmit={handleEditChurch} className="space-y-4">
+            <form onSubmit={handleEditChurch} className="space-y-5">
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">
-                  이름
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-[#41484d]">이름</label>
                 <input
                   type="text"
                   value={editingChurch.name}
                   onChange={(e) => setEditingChurch({...editingChurch, name: e.target.value})}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base font-semibold text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
+                  className="w-full rounded-xl bg-[#e5e2dd] px-4 py-3.5 text-base font-medium text-[#1c1c19] placeholder:text-[#41484d]/50 focus:outline-none focus:ring-2 focus:ring-[#32617d]/30"
                   placeholder="예: 사랑의교회 청소년부"
                   required
                 />
               </div>
-
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">
-                  설명 (선택)
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-[#41484d]">설명 <span className="font-normal text-[#41484d]/50">선택</span></label>
                 <textarea
                   value={editingChurch.description || ''}
                   onChange={(e) => setEditingChurch({...editingChurch, description: e.target.value})}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none resize-none"
+                  className="w-full rounded-xl bg-[#e5e2dd] px-4 py-3.5 text-base text-[#1c1c19] placeholder:text-[#41484d]/50 focus:outline-none focus:ring-2 focus:ring-[#32617d]/30 resize-none"
                   placeholder="간단한 설명을 입력하세요"
                   rows={3}
                 />
               </div>
-
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">
-                  생성일
-                </label>
+                <label className="mb-1.5 block text-sm font-medium text-[#41484d]">생성일</label>
                 <input
                   type="text"
                   value={new Date(editingChurch.created_at).toLocaleDateString('ko-KR')}
                   disabled
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-4 text-base text-gray-500 bg-gray-50"
+                  className="w-full rounded-xl bg-[#e5e2dd]/50 px-4 py-3.5 text-base text-[#41484d]"
                 />
               </div>
-
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-3 pt-1">
                 <button
                   type="button"
-                  onClick={() => {
-                    setShowEditModal(false);
-                    setEditingChurch(null);
-                  }}
-                  className="flex-1 rounded-full border-2 border-gray-200 py-3.5 text-base font-bold text-gray-700 hover:bg-gray-50 active:scale-95 transition-all shadow-sm"
+                  onClick={() => { setShowEditModal(false); setEditingChurch(null); }}
+                  className="flex-1 rounded-2xl bg-[#f0ede8] py-4 text-base font-semibold text-[#1c1c19] hover:bg-[#e5e2dd] active:scale-95 transition-all"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-full bg-blue-600 py-3.5 text-base font-bold text-white hover:bg-blue-700 active:scale-95 transition-all shadow-[0_4px_14px_0_rgba(37,99,235,0.4)]"
+                  className="flex-1 rounded-2xl py-4 text-base font-semibold text-white active:scale-95 transition-all"
+                  style={{ background: 'linear-gradient(135deg, #32617d, #4a8aaa)', boxShadow: '0px 8px 20px rgba(50,97,125,0.35)' }}
                 >
-                  수정
+                  저장하기
                 </button>
               </div>
             </form>

@@ -248,11 +248,11 @@ export default function AnnouncementsPage() {
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <div className="flex items-center justify-center gap-2 mb-3">
-            <div className="w-3 h-3 bg-blue-600 rounded-full animate-wave" style={{ animationDelay: '0s' }}></div>
-            <div className="w-3 h-3 bg-blue-600 rounded-full animate-wave" style={{ animationDelay: '0.1s' }}></div>
-            <div className="w-3 h-3 bg-blue-600 rounded-full animate-wave" style={{ animationDelay: '0.2s' }}></div>
+            <div className="w-3 h-3 bg-[#32617d] rounded-full animate-wave" style={{ animationDelay: '0s' }}></div>
+            <div className="w-3 h-3 bg-[#32617d] rounded-full animate-wave" style={{ animationDelay: '0.1s' }}></div>
+            <div className="w-3 h-3 bg-[#32617d] rounded-full animate-wave" style={{ animationDelay: '0.2s' }}></div>
           </div>
-          <p className="text-sm text-gray-600">잠시만 기다려주세요</p>
+          <p className="text-sm text-[#41484d]">잠시만 기다려주세요</p>
           <style jsx>{`
             @keyframes wave {
               0%, 60%, 100% {
@@ -274,26 +274,27 @@ export default function AnnouncementsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#fcf9f4]">
       <Toaster position="top-center" />
 
       {/* 상단 헤더 */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-[#fcf9f4]/85 backdrop-blur-md">
         <div className="mx-auto max-w-md px-5 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Link href={`/church/${churchId}`}>
-                <button className="rounded-lg p-2 hover:bg-gray-100 transition-colors">
-                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button className="rounded-xl p-2 hover:bg-[#f0ede8] transition-colors">
+                  <svg className="w-5 h-5 text-[#41484d]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
               </Link>
-              <h1 className="text-base font-semibold text-gray-900">공지사항</h1>
+              <h1 className="text-base font-semibold text-[#1c1c19]">공지사항</h1>
             </div>
             <button
               onClick={() => setShowModal(true)}
-              className="rounded-lg bg-blue-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-blue-700 transition-colors"
+              className="rounded-xl px-3 py-1.5 text-xs font-bold text-white transition-colors"
+              style={{ background: 'linear-gradient(135deg, #32617d, #4a8aaa)', boxShadow: '0px 8px 20px rgba(50,97,125,0.35)' }}
             >
               작성
             </button>

@@ -61,7 +61,7 @@ export default function OfferingsPage() {
 
       // 학생 목록 로드
       const { data: studentData, error: studentError } = await supabase
-        .from('students')
+        .from('members')
         .select('id, name')
         .eq('church_id', churchId)
         .order('name');
@@ -73,7 +73,7 @@ export default function OfferingsPage() {
         (offeringData || []).map(async (offering) => {
           if (offering.student_id) {
             const { data: student } = await supabase
-              .from('students')
+              .from('members')
               .select('name')
               .eq('id', offering.student_id)
               .single();
@@ -232,22 +232,22 @@ export default function OfferingsPage() {
   const totalAmount = offerings.reduce((sum, o) => sum + o.amount, 0);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#fcf9f4]">
       {/* 헤더 */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-[#fcf9f4]/85 backdrop-blur-md">
         <div className="mx-auto max-w-md px-5 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Link href={`/church/${churchId}`}>
-                <button className="rounded-lg p-2 hover:bg-gray-100">
+                <button className="rounded-xl p-2 hover:bg-[#f0ede8]">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
               </Link>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">헌금 관리</h1>
-                <p className="text-xs text-gray-500">헌금 기록 및 관리</p>
+                <h1 className="text-xl font-bold text-[#1c1c19]">헌금 관리</h1>
+                <p className="text-xs text-[#41484d]">헌금 기록 및 관리</p>
               </div>
             </div>
             <button
@@ -262,7 +262,8 @@ export default function OfferingsPage() {
                 });
                 setShowModal(true);
               }}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700"
+              className="rounded-xl px-4 py-2 text-sm font-bold text-white"
+              style={{ background: 'linear-gradient(135deg, #32617d, #4a8aaa)', boxShadow: '0px 8px 20px rgba(50,97,125,0.35)' }}
             >
               + 헌금 추가
             </button>

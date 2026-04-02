@@ -59,7 +59,7 @@ export default function ServiceSchedulePage() {
 
       // 학생 목록 로드
       const { data: studentData, error: studentError } = await supabase
-        .from('students')
+        .from('members')
         .select('id, name')
         .eq('church_id', churchId)
         .order('name');
@@ -71,7 +71,7 @@ export default function ServiceSchedulePage() {
         (scheduleData || []).map(async (schedule) => {
           if (schedule.assigned_student_id) {
             const { data: student } = await supabase
-              .from('students')
+              .from('members')
               .select('name')
               .eq('id', schedule.assigned_student_id)
               .single();

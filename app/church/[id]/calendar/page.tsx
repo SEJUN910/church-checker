@@ -155,27 +155,27 @@ export default function CalendarPage() {
   }).slice(0, 5);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-[#fcf9f4]">
       {/* 헤더 */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-[#fcf9f4]/85 backdrop-blur-md">
         <div className="mx-auto max-w-md px-5 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Link href={`/church/${churchId}`}>
-                <button className="rounded-lg p-2 hover:bg-gray-100">
+                <button className="rounded-xl p-2 hover:bg-[#f0ede8]">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                   </svg>
                 </button>
               </Link>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">교회 달력</h1>
-                <p className="text-xs text-gray-500">일정 관리</p>
+                <h1 className="text-xl font-bold text-[#1c1c19]">교회 달력</h1>
+                <p className="text-xs text-[#41484d]">일정 관리</p>
               </div>
             </div>
             <button
               onClick={() => setShowModal(true)}
-              className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white hover:bg-blue-700"
+              className="rounded-xl bg-[#32617d] px-4 py-2 text-sm font-bold text-white hover:bg-[#254d63]"
             >
               + 일정 추가
             </button>
@@ -186,8 +186,8 @@ export default function CalendarPage() {
       {/* 메인 컨텐츠 */}
       <div className="mx-auto max-w-md px-5 py-6">
         {/* 이번 달 요약 */}
-        <div className="mb-5 rounded-xl bg-white border border-gray-200 p-5">
-          <h2 className="text-base font-bold text-gray-900 mb-3">
+        <div className="mb-5 rounded-2xl bg-[#ffffff] shadow-[0px_4px_20px_rgba(28,28,25,0.06)] p-5">
+          <h2 className="text-base font-bold text-[#1c1c19] mb-3">
             {currentMonth.getFullYear()}년 {currentMonth.getMonth() + 1}월
           </h2>
           <div className="flex gap-2">
@@ -204,17 +204,17 @@ export default function CalendarPage() {
 
         {/* 다가오는 일정 */}
         <div className="mb-5">
-          <h3 className="mb-3 text-sm font-bold text-gray-700">다가오는 일정</h3>
+          <h3 className="mb-3 text-sm font-bold text-[#41484d]">다가오는 일정</h3>
           {upcomingEvents.length === 0 ? (
-            <div className="rounded-xl border border-gray-200 bg-white p-6 text-center">
+            <div className="rounded-2xl bg-[#ffffff] shadow-[0px_4px_20px_rgba(28,28,25,0.06)] p-6 text-center">
               <div className="mb-2 text-4xl">📅</div>
-              <p className="text-sm font-bold text-gray-900 mb-1">예정된 일정이 없습니다</p>
-              <p className="text-xs text-gray-500">새로운 일정을 추가해보세요</p>
+              <p className="text-sm font-bold text-[#1c1c19] mb-1">예정된 일정이 없습니다</p>
+              <p className="text-xs text-[#41484d]">새로운 일정을 추가해보세요</p>
             </div>
           ) : (
             <div className="space-y-3">
               {upcomingEvents.map((event) => (
-                <div key={event.id} className="rounded-xl border border-gray-200 bg-white p-4">
+                <div key={event.id} className="rounded-2xl bg-[#ffffff] shadow-[0px_4px_20px_rgba(28,28,25,0.06)] p-4">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
@@ -222,11 +222,11 @@ export default function CalendarPage() {
                           {getEventTypeLabel(event.event_type)}
                         </span>
                       </div>
-                      <h4 className="text-base font-bold text-gray-900 mb-1">{event.title}</h4>
+                      <h4 className="text-base font-bold text-[#1c1c19] mb-1">{event.title}</h4>
                       {event.description && (
-                        <p className="text-sm text-gray-600 mb-2">{event.description}</p>
+                        <p className="text-sm text-[#41484d] mb-2">{event.description}</p>
                       )}
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
+                      <div className="flex items-center gap-3 text-xs text-[#41484d]">
                         <div className="flex items-center gap-1">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -279,32 +279,33 @@ export default function CalendarPage() {
 
       {/* 일정 추가 모달 */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/20 backdrop-blur-sm">
-          <div className="w-full max-w-md rounded-t-3xl bg-white p-6 pb-8 animate-slide-up">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#1c1c19]/40 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-t-3xl bg-[#fcf9f4] p-6 pb-8 animate-slide-up">
+            <div className="mx-auto mb-5 h-1 w-10 rounded-full bg-[#c1c7cd]/50" />
             <div className="mb-6">
-              <h2 className="text-2xl font-extrabold text-gray-900 mb-1">새 일정 추가</h2>
-              <p className="text-sm text-gray-500">일정 정보를 입력해주세요</p>
+              <h2 className="text-2xl font-bold text-[#1c1c19] mb-1" style={{ fontFamily: 'var(--font-noto-serif)' }}>새 일정 추가</h2>
+              <p className="text-sm text-[#41484d]">일정 정보를 입력해주세요</p>
             </div>
 
             <form onSubmit={handleCreateEvent} className="space-y-4">
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">제목</label>
+                <label className="mb-2 block text-sm font-bold text-[#1c1c19]">제목</label>
                 <input
                   type="text"
                   value={newEvent.title}
                   onChange={(e) => setNewEvent({ ...newEvent, title: e.target.value })}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base font-semibold text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
+                  className="w-full rounded-xl bg-[#e5e2dd] px-4 py-3 text-base font-semibold text-[#1c1c19] placeholder:text-[#41484d] focus:outline-none focus:ring-2 focus:ring-[#32617d]/30"
                   placeholder="예: 주일예배"
                   required
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">일정 유형</label>
+                <label className="mb-2 block text-sm font-bold text-[#1c1c19]">일정 유형</label>
                 <select
                   value={newEvent.event_type}
                   onChange={(e) => setNewEvent({ ...newEvent, event_type: e.target.value })}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base font-semibold text-gray-900 focus:border-blue-600 focus:outline-none"
+                  className="w-full rounded-xl bg-[#e5e2dd] px-4 py-3 text-base font-semibold text-[#1c1c19] focus:outline-none focus:ring-2 focus:ring-[#32617d]/30"
                 >
                   <option value="service">예배</option>
                   <option value="meeting">모임</option>
@@ -315,43 +316,43 @@ export default function CalendarPage() {
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">시작 일시</label>
+                <label className="mb-2 block text-sm font-bold text-[#1c1c19]">시작 일시</label>
                 <input
                   type="datetime-local"
                   value={newEvent.start_datetime}
                   onChange={(e) => setNewEvent({ ...newEvent, start_datetime: e.target.value })}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base text-gray-900 focus:border-blue-600 focus:outline-none"
+                  className="w-full rounded-xl bg-[#e5e2dd] px-4 py-3 text-base text-[#1c1c19] focus:outline-none focus:ring-2 focus:ring-[#32617d]/30"
                   required
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">종료 일시 (선택)</label>
+                <label className="mb-2 block text-sm font-bold text-[#1c1c19]">종료 일시 (선택)</label>
                 <input
                   type="datetime-local"
                   value={newEvent.end_datetime}
                   onChange={(e) => setNewEvent({ ...newEvent, end_datetime: e.target.value })}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base text-gray-900 focus:border-blue-600 focus:outline-none"
+                  className="w-full rounded-xl bg-[#e5e2dd] px-4 py-3 text-base text-[#1c1c19] focus:outline-none focus:ring-2 focus:ring-[#32617d]/30"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">장소 (선택)</label>
+                <label className="mb-2 block text-sm font-bold text-[#1c1c19]">장소 (선택)</label>
                 <input
                   type="text"
                   value={newEvent.location}
                   onChange={(e) => setNewEvent({ ...newEvent, location: e.target.value })}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none"
+                  className="w-full rounded-xl bg-[#e5e2dd] px-4 py-3 text-base text-[#1c1c19] placeholder:text-[#41484d] focus:outline-none focus:ring-2 focus:ring-[#32617d]/30"
                   placeholder="예: 본당"
                 />
               </div>
 
               <div>
-                <label className="mb-2 block text-sm font-bold text-gray-900">설명 (선택)</label>
+                <label className="mb-2 block text-sm font-bold text-[#1c1c19]">설명 (선택)</label>
                 <textarea
                   value={newEvent.description}
                   onChange={(e) => setNewEvent({ ...newEvent, description: e.target.value })}
-                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-base text-gray-900 placeholder:text-gray-400 focus:border-blue-600 focus:outline-none resize-none"
+                  className="w-full rounded-xl bg-[#e5e2dd] px-4 py-3 text-base text-[#1c1c19] placeholder:text-[#41484d] focus:outline-none focus:ring-2 focus:ring-[#32617d]/30 resize-none"
                   placeholder="간단한 설명을 입력하세요"
                   rows={3}
                 />
@@ -361,13 +362,14 @@ export default function CalendarPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="flex-1 rounded-full border-2 border-gray-200 py-3.5 text-base font-bold text-gray-700 hover:bg-gray-50 active:scale-95 transition-all"
+                  className="flex-1 rounded-2xl bg-[#f0ede8] py-3.5 text-base font-bold text-[#41484d] active:scale-95 transition-all"
                 >
                   취소
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 rounded-full bg-blue-600 py-3.5 text-base font-bold text-white hover:bg-blue-700 active:scale-95 transition-all"
+                  className="flex-1 rounded-2xl py-3.5 text-base font-bold text-white active:scale-95 transition-all"
+                  style={{ background: 'linear-gradient(135deg, #32617d, #4a8aaa)', boxShadow: '0px 8px 20px rgba(50,97,125,0.35)' }}
                 >
                   추가
                 </button>

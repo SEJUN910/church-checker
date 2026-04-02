@@ -78,7 +78,7 @@ export default function PrayerPage() {
 
       // 학생 목록 로드
       const { data: studentData, error: studentError } = await supabase
-        .from('students')
+        .from('members')
         .select('id, name')
         .eq('church_id', churchId)
         .order('name');
@@ -90,7 +90,7 @@ export default function PrayerPage() {
         (prayerData || []).map(async (prayer) => {
           if (prayer.student_id && !prayer.is_anonymous) {
             const { data: student } = await supabase
-              .from('students')
+              .from('members')
               .select('name')
               .eq('id', prayer.student_id)
               .single();

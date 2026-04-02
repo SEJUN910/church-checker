@@ -149,6 +149,14 @@ export default function LoginPage() {
         <p className="mt-4 text-xs text-white/70">
           로그인이 안 되나요? <span className="underline cursor-pointer">문의하기</span>
         </p>
+
+        {/* 사랑부 기도 */}
+        <div className="mt-10">
+          <a href="/love"
+            className="inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-2.5 text-sm font-semibold text-white/90 backdrop-blur-sm transition-all hover:bg-white/20 active:scale-95">
+            🙏 사랑부 기도
+          </a>
+        </div>
       </div>
     </div>
   );

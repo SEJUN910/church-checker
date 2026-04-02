@@ -96,7 +96,7 @@ export default function PrayerDetailPage() {
         // 학생 정보가 있는 경우
         if (data.student_id) {
           const { data: student } = await supabase
-            .from('students')
+            .from('members')
             .select('name')
             .eq('id', data.student_id)
             .single();

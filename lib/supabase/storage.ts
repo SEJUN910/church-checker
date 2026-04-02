@@ -15,40 +15,21 @@ export async function uploadStudentPhoto(
   try {
     const supabase = createClient()
 
-    // 파일 확장자 추출
     const fileExt = file.name.split('.').pop()
-    // 파일명: {church_id}/{student_id}.{ext}
     const filePath = `${churchId}/${studentId}.${fileExt}`
 
-    console.log('Uploading to path:', filePath)
+    await supabase.storage.from('member-photos').remove([filePath])
 
-    // 기존 파일이 있으면 삭제
-    await supabase.storage.from('student-photos').remove([filePath])
-
-    // 새 파일 업로드
-    const { data, error } = await supabase.storage
-      .from('student-photos')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: true,
-      })
+    const { error } = await supabase.storage
+      .from('member-photos')
+      .upload(filePath, file, { cacheControl: '3600', upsert: true })
 
     if (error) {
       console.error('Upload error:', error)
-      console.error('Error details:', JSON.stringify(error, null, 2))
       return null
     }
 
-    console.log('Upload successful:', data)
-
-    // Public URL 생성
-    const {
-      data: { publicUrl },
-    } = supabase.storage.from('student-photos').getPublicUrl(data.path)
-
-    console.log('Public URL:', publicUrl)
-
-    return publicUrl
+    return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/member-photos/${filePath}`
   } catch (error) {
     console.error('Error uploading photo:', error)
     return null
