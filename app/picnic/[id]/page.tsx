@@ -25,6 +25,7 @@ export default function PicnicPreviewPage() {
   const [loading, setLoading]           = useState(true);
   const [picnic, setPicnic]             = useState<Picnic | null>(null);
   const [memberDetail, setMemberDetail] = useState<Member | null>(null);
+  const [lightboxSrc, setLightboxSrc]   = useState<string | null>(null);
 
   useEffect(() => { load(); }, [id]);
 
@@ -58,7 +59,7 @@ export default function PicnicPreviewPage() {
         .preview-body p[style*="text-align: center"] { text-align: center; }
         .preview-body p[style*="text-align: right"]  { text-align: right; }
         .preview-body ul, .preview-body ol { padding-left: 22px; margin: 6px 0 12px; font-size: 15px; line-height: 1.75; }
-        .preview-body img { max-width: 100%; border-radius: 10px; margin: 6px 0; }
+        .preview-body img { max-width: 100%; border-radius: 10px; margin: 6px 0; cursor: zoom-in; }
         .preview-body strong { font-weight: 700; }
         .preview-body em { font-style: italic; }
         .preview-body u  { text-decoration: underline; }
@@ -88,7 +89,12 @@ export default function PicnicPreviewPage() {
           <div style={{ fontSize: 13, fontWeight: 700, color: '#888', marginBottom: 10, letterSpacing: '0.04em' }}>📋 안내</div>
           <div style={{ background: '#fff', borderRadius: 16, padding: '24px 26px', boxShadow: '0 1px 8px rgba(0,0,0,0.07)' }}>
             {hasContent ? (
-              <div className="preview-body" dangerouslySetInnerHTML={{ __html: picnic.description! }} />
+              <div className="preview-body" dangerouslySetInnerHTML={{ __html: picnic.description! }}
+                onClick={e => {
+                  const target = e.target as HTMLElement;
+                  if (target.tagName === 'IMG') setLightboxSrc((target as HTMLImageElement).src);
+                }}
+              />
             ) : (
               <div style={{ textAlign: 'center', padding: '40px 0', color: '#ccc', fontSize: 14 }}>
                 안내 내용이 없습니다.
@@ -159,6 +165,25 @@ export default function PicnicPreviewPage() {
         </div>
 
       </div>
+
+      {/* Lightbox */}
+      {lightboxSrc && (
+        <div
+          onClick={() => setLightboxSrc(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.88)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, touchAction: 'pinch-zoom' }}
+        >
+          <img
+            src={lightboxSrc}
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: 10, userSelect: 'none' }}
+            alt=""
+          />
+          <button
+            onClick={() => setLightboxSrc(null)}
+            style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', borderRadius: '50%', width: 36, height: 36, fontSize: 18, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >✕</button>
+        </div>
+      )}
 
       {/* Member detail popup */}
       {memberDetail && (

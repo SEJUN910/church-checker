@@ -136,10 +136,10 @@ export default function PicnicDetailPage() {
     try {
       const ext = file.name.split('.').pop();
       const path = `${id}/${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from('picnic-images').upload(path, file, { upsert: false });
-      if (error) { toast.error('이미지 업로드 실패'); return; }
-      const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/picnic-images/${path}`;
-      editor.chain().focus().insertContent({ type: 'image', attrs: { src: url } }).run();
+      const { data: uploadData, error } = await supabase.storage.from('picnic-images').upload(path, file, { upsert: true });
+      if (error) { toast.error(`이미지 업로드 실패: ${error.message}`); return; }
+      const { data: { publicUrl: url } } = supabase.storage.from('picnic-images').getPublicUrl(uploadData.path);
+      editor.chain().focus().insertContent({ type: 'imageResize', attrs: { src: url } }).run();
     } finally {
       setUploadingImg(false);
       e.target.value = '';
