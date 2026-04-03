@@ -139,7 +139,7 @@ export default function PicnicDetailPage() {
       const { error } = await supabase.storage.from('picnic-images').upload(path, file, { upsert: false });
       if (error) { toast.error('이미지 업로드 실패'); return; }
       const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/picnic-images/${path}`;
-      editor.chain().focus().setImage({ src: url }).run();
+      editor.chain().focus().insertContent({ type: 'image', attrs: { src: url } }).run();
     } finally {
       setUploadingImg(false);
       e.target.value = '';
@@ -197,7 +197,7 @@ export default function PicnicDetailPage() {
         body: JSON.stringify({ member_ids: Array.from(pickerSelected) }),
       });
       if (!res.ok) { toast.error('추가 실패'); return; }
-      const newMembers = allMembers.filter(m => pickerSelected.has(m.id) && !pickerGroup.members.find(gm => gm.id === m.id));
+      const newMembers = allMembers.filter(m => pickerSelected.has(m.id) && !pickerGroup.members.find(gm => gm.id === m.id)) as Member[];
       setPicnic(p => p ? { ...p, groups: p.groups.map(g => g.id === pickerGroup.id ? { ...g, members: [...g.members, ...newMembers] } : g) } : p);
       toast.success(`${newMembers.length}명 추가됨`);
       setPickerGroup(null);
