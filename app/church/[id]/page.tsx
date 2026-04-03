@@ -137,7 +137,7 @@ export default function ChurchDetailPage() {
     phone: '',
     birthdate: '',
     grade: '',
-    type: 'student' as 'student' | 'teacher',
+    type: 'student' as 'student' | 'teacher' | 'parent' | 'other',
     attendance_days: ['0'] // 기본값: 일요일만
   });
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
