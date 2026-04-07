@@ -310,12 +310,12 @@ export default function LovePage() {
           }}>
             "이같이 너희 빛이 사람 앞에 비치게 하여 그들로 너희 착한 행실을 보고 하늘에 계신 너희 아버지께 영광을 돌리게 하라"<br/> — 마태복음 5:16
           </p> */}
-          <div className="anim-fade-in" style={{
+          {/* <div className="anim-fade-in" style={{
             animationDelay: '0.55s',
             width: 1, height: 28,
             background: `linear-gradient(to bottom, transparent, ${gold}, transparent)`,
             margin: '20px auto 0',
-          }} />
+          }} /> */}
         </header>
 
         {/* ── 기도제목 섹션 ── */}
@@ -420,7 +420,7 @@ export default function LovePage() {
               <div style={{
                 width: 24, height: 24, border: `1px solid ${gold}`, borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: gold, fontSize: 13, flexShrink: 0,
+                color: gold, fontSize: 15, flexShrink: 0,
               }}>✉</div>
               <h2 style={{ fontFamily: 'var(--font-noto-serif)', fontSize: 17, fontWeight: 500, color: ink, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>
                 응원메세지
