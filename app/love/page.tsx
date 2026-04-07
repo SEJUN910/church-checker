@@ -537,10 +537,10 @@ export default function LovePage() {
             borderTop: `1px solid ${parchment}`, paddingTop: 20,
             fontSize: 11, color: inkSoft, lineHeight: 2.2, letterSpacing: '0.04em',
           }}>
-            <div><span style={{ color: inkMid, fontWeight: 500 }}>주소</span>&nbsp;&nbsp;(06959) 서울특별시 동작구 성대로1길 26 제2교육관 갈리리홀</div>
+            <div><span style={{ color: inkMid, fontWeight: 500 }}>주소</span>&nbsp;&nbsp;(06959) 서울특별시 동작구 성대로1길 26 동광교회</div>
             <div style={{ fontSize: 10, color: inkSoft, marginTop: -4, marginBottom: 2 }}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(상도동, 동광교회)</div>
-            <div><span style={{ color: inkMid, fontWeight: 500 }}>예배시간</span>&nbsp;&nbsp;주일 오후 12시</div>
-            <div><span style={{ color: inkMid, fontWeight: 500 }}>특별한날</span>&nbsp;&nbsp;매달 4번째 주는 열린예배로 드려집니다♥</div>
+            <div><span style={{ color: inkMid, fontWeight: 500 }}>예배시간</span>&nbsp;&nbsp;농인부 : 주일 오전 11시 / 사랑부 : 주일 오후 12시</div>
+            <div><span style={{ color: inkMid, fontWeight: 500 }}>특별한날</span>&nbsp;&nbsp;사랑부는 매달 4번째 주는 열린예배로 드려집니다♥</div>
           </div>
         </footer>
       </div>
