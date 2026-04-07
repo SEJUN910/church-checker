@@ -160,7 +160,7 @@ export default function LovePage() {
 
   useEffect(() => {
     if (!localStorage.getItem('dk_anon_id')) {
-      localStorage.setItem('dk_anon_id', crypto.randomUUID());
+      localStorage.setItem('dk_anon_id', crypto?.randomUUID());
     }
     const saved = localStorage.getItem('dk_liked_messages');
     if (saved) setLikedIds(new Set(JSON.parse(saved)));
@@ -254,14 +254,50 @@ export default function LovePage() {
     }
   };
 
+  // const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  //   const file = e.target.files?.[0];
+  //   if (!file) return;
+  //   const preview = URL.createObjectURL(file);
+  //   setImagePreview(preview);
+  //   setImageFile(file);
+  //   e.target.value = '';
+  // };
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const preview = URL.createObjectURL(file);
-    setImagePreview(preview);
-    setImageFile(file);
-    e.target.value = '';
-  };
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  let visualFile = file;
+
+  // 1. HEIC 파일인 경우 실행
+  if (file.name.toLowerCase().endsWith('.heic') || file.type === 'image/heic') {
+    try {
+      // 클라이언트 사이드에서만 라이브러리를 동적으로 불러옴
+      const heic2any = (await import("heic2any")).default;
+
+      const convertedBlob = await heic2any({
+        blob: file,
+        toType: "image/jpeg",
+        quality: 0.7,
+      });
+
+      const resultBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+      
+      visualFile = new File([resultBlob], file.name.replace(/\.[^/.]+$/, ".jpg"), {
+        type: "image/jpeg",
+      });
+    } catch (error) {
+      console.error("HEIC 변환 실패:", error);
+      return;
+    }
+  }
+
+  // 2. 미리보기 및 상태 업데이트
+  const preview = URL.createObjectURL(visualFile);
+  setImagePreview(preview);
+  setImageFile(visualFile);
+  
+  e.target.value = '';
+};
 
   const removeImage = () => {
     if (imagePreview) URL.revokeObjectURL(imagePreview);
