@@ -16,8 +16,8 @@ const notoSerif = Noto_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "동광교회 사랑부",
-  description: "교회 출석을 쉽게 관리하는 앱",
+  title: "동광교회 농인부 & 사랑부",
+  description: "동광교회 농인부 & 사랑부를 응원해주세요!",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
