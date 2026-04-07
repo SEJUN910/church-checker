@@ -429,8 +429,13 @@ export default function LovePage() {
               <div style={{
                 width: 24, height: 24, border: `1px solid ${gold}`, borderRadius: '50%',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: gold, fontSize: 15, flexShrink: 0,
-              }}>✉</div>
+                color: gold, flexShrink: 0,
+              }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+              </div>
               <h2 style={{ fontFamily: 'var(--font-noto-serif)', fontSize: 17, fontWeight: 500, color: ink, letterSpacing: '0.02em', whiteSpace: 'nowrap' }}>
                 응원메세지
                 {total > 0 && <span style={{ fontSize: 12, color: inkSoft, fontWeight: 400, marginLeft: 8 }}>{total}개</span>}
