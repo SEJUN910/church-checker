@@ -355,7 +355,7 @@ export default function LovePage() {
               <div key={prayer.id} style={cardBase}>
                 <div
                   className="prose prose-sm max-w-none prayer-content"
-                  style={{ fontSize: 14, lineHeight: 1.85, color: inkMid }}
+                  style={{ fontSize: 14, lineHeight: 1.85, color: inkMid, fontWeight: 500 }}
                   dangerouslySetInnerHTML={{ __html: prayer.content }}
                 />
                 {prayer.theme_verse && (
@@ -401,7 +401,7 @@ export default function LovePage() {
             }}>✉</div>
             <p style={{ fontSize: 15, fontWeight: 600, color: ink, marginBottom: 4 }}>기도제목을 읽으셨나요?</p>
             <p style={{ fontSize: 13, color: inkSoft, lineHeight: 1.7, marginBottom: 14 }}>
-              짧은 응원 메시지나 기도 한 줄을 남겨보세요.<br />큰 힘이 됩니다 🙏
+              짧은 응원 메시지나 기도 한 줄을 남겨주세요.<br />큰 힘이 됩니다 🙏
             </p>
             <span style={{
               display: 'inline-block',
@@ -537,10 +537,10 @@ export default function LovePage() {
             borderTop: `1px solid ${parchment}`, paddingTop: 20,
             fontSize: 11, color: inkSoft, lineHeight: 2.2, letterSpacing: '0.04em',
           }}>
-            <div><span style={{ color: inkMid, fontWeight: 500 }}>주소</span>&nbsp;&nbsp;(06959) 서울특별시 동작구 성대로1길 26 동광교회</div>
-            <div style={{ fontSize: 10, color: inkSoft, marginTop: -4, marginBottom: 2 }}>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(상도동, 동광교회)</div>
-            <div><span style={{ color: inkMid, fontWeight: 500 }}>예배시간</span>&nbsp;&nbsp;농인부 : 주일 오전 11시 / 사랑부 : 주일 오후 12시</div>
-            <div><span style={{ color: inkMid, fontWeight: 500 }}>특별한날</span>&nbsp;&nbsp;사랑부는 매달 4번째 주는 열린예배로 드려집니다♥</div>
+            <div><span style={{ color: inkMid, fontWeight: 500 }}>주소</span>&nbsp;&nbsp;(06959) 서울특별시 동작구 성대로1길 26</div>
+            <div><span style={{ color: inkMid, fontWeight: 500 }}>농인부</span>&nbsp;&nbsp;6층 교육관 · 주일 오전 11시</div>
+            <div><span style={{ color: inkMid, fontWeight: 500 }}>사랑부</span>&nbsp;&nbsp;제2교육관 갈릴리홀 · 주일 오후 12시</div>
+            <div><span style={{ color: inkMid, fontWeight: 500 }}>특별한날</span>&nbsp;&nbsp;사랑부는 매달 4번째 주 열린예배로 드려집니다♥</div>
           </div>
         </footer>
       </div>
