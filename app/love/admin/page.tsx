@@ -44,7 +44,7 @@ export default function LoveAdminPage() {
   const [editSaving, setEditSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
-  const [newPrayer, setNewPrayer] = useState({ title: '', content: '', author_name: '', category: '일반', theme_verse: '' });
+  const [newPrayer, setNewPrayer] = useState({ title: '', content: '', author_name: '', category: '농인부', theme_verse: '' });
   const [submitting, setSubmitting] = useState(false);
 
   // 응원메세지
@@ -116,7 +116,7 @@ export default function LoveAdminPage() {
       const created = await res.json();
       setPrayers(prev => [created, ...prev]);
       setShowAddModal(false);
-      setNewPrayer({ title: '', content: '', author_name: '', category: '일반', theme_verse: '' });
+      setNewPrayer({ title: '', content: '', author_name: '', category: '농인부', theme_verse: '' });
       toast.success('등록되었습니다 🙏');
     } catch {
       toast.error('등록 실패');
@@ -398,6 +398,25 @@ export default function LoveAdminPage() {
           <div className="w-full max-w-lg rounded-t-3xl bg-white p-6 pb-8 shadow-xl max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-extrabold text-gray-900 mb-5">기도제목 추가</h2>
             <form onSubmit={handleAdd} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1.5">부서 *</label>
+                <div className="flex gap-2">
+                  {(['농인부', '사랑부'] as const).map(dept => (
+                    <button
+                      key={dept}
+                      type="button"
+                      onClick={() => setNewPrayer({ ...newPrayer, category: dept })}
+                      className={`flex-1 py-2.5 rounded-xl text-sm font-bold border-2 transition-colors ${
+                        newPrayer.category === dept
+                          ? 'border-purple-500 bg-purple-50 text-purple-700'
+                          : 'border-gray-200 text-gray-400 hover:border-gray-300'
+                      }`}
+                    >
+                      {dept}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1.5">제목 *</label>
                 <input

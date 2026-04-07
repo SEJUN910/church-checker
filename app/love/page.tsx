@@ -104,7 +104,7 @@ const RANDOM_NAMES = [
 type DeptTab = '농인부' | '사랑부';
 
 export default function LovePage() {
-  const [deptTab, setDeptTab]       = useState<DeptTab>(() => Math.random() < 0.5 ? '농인부' : '사랑부');
+  const [deptTab, setDeptTab]       = useState<DeptTab>('농인부');
   const [prayers, setPrayers]       = useState<PrayerItem[]>([]);
   const [prayerLoading, setPrayerLoading] = useState(true);
   const [messages, setMessages]     = useState<Message[]>([]);
@@ -140,6 +140,8 @@ export default function LovePage() {
     const saved = localStorage.getItem('dk_liked_messages');
     if (saved) setLikedIds(new Set(JSON.parse(saved)));
     loadPrayers();
+
+    setDeptTab(() => Math.random() < 0.5 ? '농인부' : '사랑부')
   }, []);
 
   useEffect(() => { loadMessages(1, sort); }, [sort]);
@@ -346,33 +348,40 @@ export default function LovePage() {
 
           {prayerLoading ? (
             <div style={{ padding: '32px 0', textAlign: 'center', color: inkSoft, fontSize: 13 }}>불러오는 중…</div>
-          ) : prayers.filter(p => p.title === deptTab).length === 0 ? (
+          ) : prayers.filter(p => {
+                const dept = (['농인부', '사랑부'] as string[]).includes(p.category) ? p.category : p.title;
+                return dept === deptTab;
+              }).length === 0 ? (
             <div style={{ background: '#fff', border: `1px solid ${parchment}`, borderRadius: 4, padding: 32, textAlign: 'center' }}>
               <p style={{ color: inkSoft, fontSize: 13 }}>아직 기도제목이 없어요</p>
             </div>
           ) : (
-            prayers.filter(p => p.title === deptTab).map((prayer) => (
-              <div key={prayer.id} style={cardBase}>
-                <div
-                  className="prose prose-sm max-w-none prayer-content"
-                  style={{ fontSize: 14, lineHeight: 1.85, color: inkMid, fontWeight: 500 }}
-                  dangerouslySetInnerHTML={{ __html: prayer.content }}
-                />
-                {prayer.theme_verse && (
-                  <div style={{
-                    marginTop: 14,
-                    paddingTop: 12, borderTop: `1px solid ${parchment}`,
-                    fontFamily: 'var(--font-noto-serif)', fontSize: 14,
-                    color: gold, lineHeight: 1.7,
-                  }}>
-                    {prayer.theme_verse}
+            prayers.map((prayer) => {
+              if( prayer.category === deptTab ) {
+                return (
+                  <div key={prayer.id} style={cardBase}>
+                    <div
+                      className="prose prose-sm max-w-none prayer-content"
+                      style={{ fontSize: 14, lineHeight: 1.85, color: inkMid, fontWeight: 500 }}
+                      dangerouslySetInnerHTML={{ __html: prayer.content }}
+                    />
+                    {prayer.theme_verse && (
+                      <div style={{
+                        marginTop: 14,
+                        paddingTop: 12, borderTop: `1px solid ${parchment}`,
+                        fontFamily: 'var(--font-noto-serif)', fontSize: 14,
+                        color: gold, lineHeight: 1.7,
+                      }}>
+                        {prayer.theme_verse}
+                      </div>
+                    )}
+                    <div className="text-end" style={{ marginTop: 10, fontSize: 11, color: inkSoft, letterSpacing: '0.04em' }}>
+                      {new Date(prayer.created_at).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                    </div>
                   </div>
-                )}
-                <div className="text-end" style={{ marginTop: 10, fontSize: 11, color: inkSoft, letterSpacing: '0.04em' }}>
-                  {new Date(prayer.created_at).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
-                </div>
-              </div>
-            ))
+                )
+              }
+            })
           )}
         </section>
 
@@ -539,8 +548,7 @@ export default function LovePage() {
           }}>
             <div><span style={{ color: inkMid, fontWeight: 500 }}>주소</span>&nbsp;&nbsp;(06959) 서울특별시 동작구 성대로1길 26</div>
             <div><span style={{ color: inkMid, fontWeight: 500 }}>농인부</span>&nbsp;&nbsp;6층 교육관 · 주일 오전 11시</div>
-            <div><span style={{ color: inkMid, fontWeight: 500 }}>사랑부</span>&nbsp;&nbsp;제2교육관 갈릴리홀 · 주일 오후 12시</div>
-            <div><span style={{ color: inkMid, fontWeight: 500 }}>특별한날</span>&nbsp;&nbsp;사랑부는 매달 4번째 주 열린예배로 드려집니다♥</div>
+            <div><span style={{ color: inkMid, fontWeight: 500 }}>사랑부</span>&nbsp;&nbsp;제2교육관 갈릴리홀 · 주일 오후 12시 <span style={{ color: gold }}>·</span> 매달 4번째 주 열린예배♥</div>
           </div>
         </footer>
       </div>
