@@ -220,18 +220,47 @@ export default function LovePage() {
       let image_url: string | null = null;
       if (imageFile) {
         setUploadingImg(true);
-        const blob = await compressImage(imageFile);
+  
+        let finalBlob: Blob = imageFile;
+
+        // 1. 만약 handleImageSelect에서 변환되지 않은 HEIC가 넘어왔을 경우를 대비한 안전장치
+        if (imageFile.name.toLowerCase().endsWith('.heic') || imageFile.type === 'image/heic') {
+          try {
+            const heic2any = (await import("heic2any")).default;
+            const converted = await heic2any({ blob: imageFile, toType: "image/jpeg", quality: 0.7 });
+            finalBlob = Array.isArray(converted) ? converted[0] : converted;
+          } catch (e) {
+            console.error("HEIC 최종 변환 실패:", e);
+          }
+        }
+
+        // 만약 compressImage 내부에서 에러가 난다면 이 함수를 점검해야 합니다.
+        const blob = await compressImage(finalBlob as File);         
         const ext = 'jpg';
         const path = `love/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('picnic-images')
-          .upload(path, blob, { contentType: 'image/jpeg', upsert: true });
+          .upload(path, blob, { 
+            contentType: 'image/jpeg', // 타입을 명시적으로 jpeg로 고정
+            cacheControl: '3600',
+            upsert: true 
+          });
+    
+        // setUploadingImg(true);
+        // const blob = await compressImage(imageFile);
+        // const ext = 'jpg';
+        // const path = `love/${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${ext}`;
+        // const { data: uploadData, error: uploadError } = await supabase.storage
+        //   .from('picnic-images')
+        //   .upload(path, blob, { contentType: 'image/jpeg', upsert: true });
         setUploadingImg(false);
+
         if (uploadError) { toast.error('이미지 업로드 실패'); return; }
         const { data: { publicUrl } } = supabase.storage.from('picnic-images').getPublicUrl(uploadData.path);
         image_url = publicUrl;
+      
       }
-
       const res = await fetch('/api/love/messages', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
