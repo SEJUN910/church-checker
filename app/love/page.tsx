@@ -75,24 +75,49 @@ const cardBase: React.CSSProperties = {
   boxShadow: '0 2px 12px rgba(184,154,90,0.08)',
 };
 
-function SectionHeader({ icon, title }: { icon: string; title: string }) {
+function SectionHeader({ title }: { title: string }) {
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-      <div style={{
-        width: 24, height: 24, border: `1px solid ${gold}`, borderRadius: '50%',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        color: gold, fontSize: 13, flexShrink: 0,
-      }}>
-        {icon}
-      </div>
-      <h2 style={{
-        fontFamily: 'var(--font-noto-serif)', fontSize: 17, fontWeight: 500,
-        color: ink, letterSpacing: '0.02em', whiteSpace: 'nowrap',
-      }}>
-        {title}
-      </h2>
-      <div style={{ flex: 1, height: 1, background: `linear-gradient(to right, ${parchment}, transparent)` }} />
-    </div>
+    <div style={{ 
+  display: 'flex', 
+  alignItems: 'center', 
+  gap: 12, 
+  marginBottom: 16 // 여백을 조금 더 주어 시원하게 배치
+}}>
+  {/* 십자가 아이콘 영역 */}
+  <div style={{
+    width: 24, height: 24, 
+    border: `1.2px solid ${gold}`, // 선 두께를 살짝 올림
+    borderRadius: '50%',
+    display: 'flex', alignItems: 'center', justifyContent: 'center',
+    color: gold, flexShrink: 0,
+  }}>
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      {/* 정통 십자가 비율: 가로선을 위쪽(y=9)으로 배치 */}
+      <path d="M12 3v18M6 9h12"/>
+    </svg>
+  </div>
+
+  {/* 제목 영역 */}
+  <h2 style={{
+    fontFamily: 'var(--font-noto-serif)', 
+    fontSize: 18, // 가독성을 위해 살짝 키움
+    fontWeight: 500, // Serif 서체는 600 정도가 고급스러움
+    color: ink, 
+    letterSpacing: '-0.01em', // Serif는 자간을 살짝 좁히는 게 예쁨
+    whiteSpace: 'nowrap',
+    margin: 0,
+  }}>
+    {title}
+  </h2>
+
+  {/* 오른쪽 장식 선 */}
+  <div style={{ 
+    flex: 1, 
+    height: '1px', 
+    background: `linear-gradient(to right, ${gold}44, transparent)`, // 골드에 투명도(44)를 주어 은은하게
+    marginLeft: 8 
+  }} />
+</div>
   );
 }
 
@@ -322,7 +347,7 @@ export default function LovePage() {
 
         {/* ── 기도제목 섹션 ── */}
         <section className="anim-fade-up" style={{ animationDelay: '0.65s', marginBottom: 52 }}>
-          <SectionHeader icon="✦" title="기도제목" />
+          <SectionHeader title="기도제목" />
 
           {/* 부서 탭 */}
           <div style={{ display: 'flex', gap: 0, marginBottom: 20, borderBottom: `1px solid ${parchment}` }}>
