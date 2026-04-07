@@ -576,9 +576,15 @@ export default function LovePage() {
             borderTop: `1px solid ${parchment}`, paddingTop: 20,
             fontSize: 11, color: inkSoft, lineHeight: 2.2, letterSpacing: '0.04em',
           }}>
-            <div><span style={{ color: inkMid, fontWeight: 500 }}>주소</span>&nbsp;&nbsp;(06959) 서울특별시 동작구 성대로1길 26</div>
-            <div><span style={{ color: inkMid, fontWeight: 500 }}>농인부</span>&nbsp;&nbsp;6층 교육관 · 주일 오전 11시</div>
-            <div><span style={{ color: inkMid, fontWeight: 500 }}>사랑부</span>&nbsp;&nbsp;제2교육관 갈릴리홀 · 주일 오후 12시 <span style={{ color: gold }}>·</span> 매달 4번째 주 열린예배♥</div>
+            <div className="flex gap-4 flex-start"><span style={{ color: inkMid, fontWeight: 500 }}>주소</span>(06959) 서울특별시 동작구 성대로1길 26</div>
+            <div className="flex gap-2 flex-start"><span style={{ color: inkMid, fontWeight: 500 }}>농인부</span>6층 교육관 · 주일 오전 11시</div>
+            <div className="flex gap-2 flex-start">
+                <div style={{ color: inkMid, fontWeight: 500 }}>사랑부</div>
+                <div className="flex flex-col">
+                  <div>제2교육관 갈릴리홀 · 주일 오후 12시</div>
+                  <div className='leading-4'>사랑부는 매달 4번째 주 열린예배♥</div>
+                </div>
+            </div>
           </div>
         </footer>
       </div>
