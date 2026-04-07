@@ -468,7 +468,10 @@ export default function LovePage() {
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               margin: '0 auto 12px',
               fontSize: 20, color: gold,
-            }}>✉</div>
+            }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                </svg></div>
             <p style={{ fontSize: 15, fontWeight: 600, color: ink, marginBottom: 4 }}>기도제목을 읽으셨나요?</p>
             <p style={{ fontSize: 13, color: inkSoft, lineHeight: 1.7, marginBottom: 14 }}>
               짧은 응원 메시지나 기도 한 줄을 남겨주세요.<br />큰 힘이 됩니다 🙏
