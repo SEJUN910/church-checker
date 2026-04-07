@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { flushSync } from 'react-dom';
 import { PiHandsPrayingFill } from 'react-icons/pi';
 
 interface Message {
   id: string;
   author_name: string;
   content: string;
+  image_url: string | null;
   created_at: string;
   likes_count: number;
 }
@@ -16,18 +18,13 @@ const MAX_FEED      = 40;
 const MAX_NEW_PANEL = 4;
 
 // 스테퍼
-const VISIBLE = 12;   // 보여줄 슬롯 수
-const STEP_MS = 3000; // 한 칸 대기(ms)
-const ANIM_MS = 380;  // 이동 애니메이션(ms)
-
-// 뷰포트 높이 기반으로 슬롯 높이 계산
-function calcSlotH() {
-  if (typeof window === 'undefined') return 90;
-  return Math.max(72, Math.min(180, Math.floor((window.innerHeight - 40) / VISIBLE)));
-}
+const INIT_SLOTS = 12; // 초기 로드 슬롯 수 (가변 높이라 화면을 넘치게 넉넉히)
+const STEP_MS = 3400;  // 한 칸 대기(ms)
+const ANIM_MS = 700;   // 이동 애니메이션(ms)
 
 const CONFETTI_COLORS = ['#ff4d6d','#ff9a3c','#ffd60a','#4ade80','#60a5fa','#a78bfa','#f472b6','#34d399','#fb923c','#38bdf8'];
 const CONFETTI_ANIMS  = ['confettiPopA','confettiPopB','confettiPopC','confettiPopD','confettiPopE','confettiPopF','confettiPopG','confettiPopH'];
+const FLOAT_ANIMS     = ['floatA','floatB','floatC'];
 
 function hashId(id: string): number {
   let h = 0;
@@ -42,71 +39,86 @@ const inkMid  = '#444444';
 const inkSoft = '#888888';
 
 interface Particle { id: number; color: string; shape: number; anim: string; dur: number; delay: number; w: number; h: number; }
+interface HeartParticle { id: number; x: number; dur: number; delay: number; size: number; }
 interface SlotItem  { msg: Message; uid: string; }
 
 /* ── 말풍선 ── */
-function ChatBubble({ msg, isNew, slotH }: { msg: Message; isNew: boolean; slotH: number }) {
+function ChatBubble({ msg, isNew }: { msg: Message; isNew: boolean }) {
   const h      = hashId(msg.id);
   const isLeft = h % 2 === 0;
-
-  // 슬롯 높이에 비례한 폰트/패딩 스케일
-  const scale = slotH / 90;
-  const fs = (base: number) => Math.round(base * scale);
+  const hasImage = !!msg.image_url;
 
   return (
     <div style={{
-      height: slotH,
       display: 'flex', flexDirection: 'column',
       alignItems: isLeft ? 'flex-start' : 'flex-end',
-      justifyContent: 'center',
-      padding: `0 ${fs(28)}px`,
+      padding: '10px 28px',
+      gap: 4,
+      animationName: isNew ? FLOAT_ANIMS[h % FLOAT_ANIMS.length] : undefined,
+      animationDuration: isNew ? `${2.8 + (h % 5) * 0.4}s` : undefined,
+      animationTimingFunction: isNew ? 'ease-in-out' : undefined,
+      animationIterationCount: isNew ? 'infinite' : undefined,
     }}>
-      {/* 이름 */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: fs(6), marginBottom: fs(4),
-        flexDirection: isLeft ? 'row' : 'row-reverse',
-      }}>
-        <span style={{ fontSize: fs(13), fontWeight: 700, color: inkMid }}>{msg.author_name}</span>
-        {isNew && (
-          <span style={{ background: '#e94545', color: '#fff', fontSize: fs(9), fontWeight: 800, letterSpacing: '0.1em', padding: `${fs(2)}px ${fs(7)}px`, borderRadius: 10 }}>NEW</span>
-        )}
-        {msg.likes_count > 0 && (
-          <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: fs(12), color: accentD }}>
-            <PiHandsPrayingFill size={fs(11)} color={accent} /> {msg.likes_count}
-          </span>
-        )}
-      </div>
-
-      {/* 버블 + 꼬리 */}
-      <div style={{ position: 'relative', display: 'inline-block', maxWidth: '60%' }}>
-        {/* 꼬리 */}
-        <div style={{
-          position: 'absolute', bottom: -fs(9),
-          ...(isLeft ? { left: fs(14) } : { right: fs(14) }),
-          width: 0, height: 0,
-          borderLeft:  isLeft ? '0 solid transparent'   : `${fs(13)}px solid transparent`,
-          borderRight: isLeft ? `${fs(13)}px solid transparent` : '0 solid transparent',
-          borderTop: `${fs(10)}px solid #ffffff`,
-          filter: 'drop-shadow(0 3px 3px rgba(0,0,0,0.05))',
-        }} />
-        {/* 버블 */}
+      {/* 버블 */}
+      <div style={{ position: 'relative', display: 'inline-block', maxWidth: '72%' }}>
         <div style={{
           background: '#ffffff',
-          borderRadius: isLeft ? `${fs(5)}px ${fs(20)}px ${fs(20)}px ${fs(20)}px` : `${fs(20)}px ${fs(5)}px ${fs(20)}px ${fs(20)}px`,
-          padding: `${fs(10)}px ${fs(16)}px`,
+          borderRadius: isLeft ? '4px 18px 18px 18px' : '18px 4px 18px 18px',
+          padding: hasImage ? '8px' : '10px 16px',
           boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
           overflow: 'hidden',
         }}>
-          <p style={{
-            fontSize: fs(17), lineHeight: 1.55, color: ink,
-            margin: 0, fontWeight: 400,
-            overflow: 'hidden', display: '-webkit-box',
-            WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
-            wordBreak: 'break-word',
-          } as React.CSSProperties}>
-            {msg.content}
-          </p>
+          {hasImage && (
+            <img
+              src={msg.image_url!}
+              alt=""
+              style={{
+                display: 'block',
+                width: '100%',
+                maxHeight: 180,
+                minHeight: 80,
+                objectFit: 'contain',
+                borderRadius: 10,
+                marginBottom: msg.content ? 6 : 0,
+              }}
+            />
+          )}
+          {msg.content && (
+            <p style={{
+              fontSize: 15, lineHeight: 1.5, color: ink,
+              margin: 0, fontWeight: 500,
+              wordBreak: 'break-word',
+            }}>
+              {msg.content}
+            </p>
+          )}
         </div>
+        {/* 꼬리 */}
+        <div style={{
+          position: 'absolute', bottom: -10,
+          ...(isLeft ? { left: 16 } : { right: 16 }),
+          width: 0, height: 0,
+          borderLeft:  isLeft ? '0 solid transparent'   : '14px solid transparent',
+          borderRight: isLeft ? '14px solid transparent' : '0 solid transparent',
+          borderTop: '12px solid #ffffff',
+          filter: 'drop-shadow(0 4px 4px rgba(0,0,0,0.07))',
+        }} />
+      </div>
+
+      {/* 이름 */}
+      <div style={{
+        display: 'flex', alignItems: 'center', gap: 6, marginTop: 4,
+        flexDirection: isLeft ? 'row' : 'row-reverse',
+      }}>
+        <span style={{ fontSize: 12, fontWeight: 700, color: '#2a2a2a' }}>{msg.author_name}</span>
+        {isNew && (
+          <span style={{ background: '#e94545', color: '#fff', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', padding: '2px 6px', borderRadius: 10 }}>NEW</span>
+        )}
+        {msg.likes_count > 0 && (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 2, fontSize: 11, color: accentD }}>
+            <PiHandsPrayingFill size={10} color={accent} /> {msg.likes_count}
+          </span>
+        )}
       </div>
     </div>
   );
@@ -118,20 +130,52 @@ export default function CheerPage() {
   const [newPanelMsgs, setNewPanelMsgs] = useState<Message[]>([]);
   const [newIds, setNewIds]             = useState<Set<string>>(new Set());
   const [total, setTotal]               = useState(0);
-  const [timeStr, setTimeStr]           = useState('');
+  const [displayTotal, setDisplayTotal] = useState(0);
+  const prevTotal                       = useRef(0);
+  const [now, setNow]                   = useState<Date>(() => new Date());
   const [particles, setParticles]       = useState<Particle[]>([]);
+  const [hearts, setHearts]             = useState<HeartParticle[]>([]);
+  const heartPid                        = useRef(0);
+  const heartAsideRef                   = useRef<HTMLDivElement>(null);
   const [burstMsg, setBurstMsg]         = useState<Message | null>(null);
   const [burstLeave, setBurstLeave]     = useState(false);
+  const burstQueue                      = useRef<Message[]>([]);
+  const burstBusy                       = useRef(false);
 
-  // 뷰포트 기반 슬롯 높이
-  const [slotH, setSlotH]       = useState(90);
-  const slotHRef                = useRef(90);
+  /* ── 카운트업 애니메이션 ── */
+  useEffect(() => {
+    const from = prevTotal.current;
+    const to   = total;
+    if (from === to) return;
+    prevTotal.current = to;
+    const diff     = to - from;
+    const duration = Math.min(900, diff * 60);
+    const start    = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const ease = 1 - Math.pow(1 - t, 3); // ease-out cubic
+      setDisplayTotal(Math.round(from + diff * ease));
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, [total]);
+
+  const showNextBurst = useCallback(() => {
+    if (burstQueue.current.length === 0) { burstBusy.current = false; return; }
+    burstBusy.current = true;
+    const next = burstQueue.current.shift()!;
+    setBurstLeave(false);
+    setBurstMsg(next);
+    setTimeout(() => setBurstLeave(true), 4500);
+    setTimeout(() => { setBurstMsg(null); showNextBurst(); }, 5200);
+  }, []);
 
   // 스테퍼
   const [slots, setSlots]       = useState<SlotItem[]>([]);
   const [offset, setOffset]     = useState(0);
   const [isMoving, setIsMoving] = useState(false);
   const allMsgsRef  = useRef<Message[]>([]);
+  const slotListRef = useRef<HTMLDivElement>(null);
   const headRef     = useRef(0);
   const uidRef      = useRef(0);
   const initialized = useRef(false);
@@ -140,24 +184,12 @@ export default function CheerPage() {
   const prevIds = useRef<Set<string>>(new Set());
   const pid     = useRef(0);
 
-  /* ── 뷰포트 크기에 따른 slotH 계산 ── */
-  useEffect(() => {
-    const update = () => {
-      const h = calcSlotH();
-      slotHRef.current = h;
-      setSlotH(h);
-    };
-    update();
-    window.addEventListener('resize', update);
-    return () => window.removeEventListener('resize', update);
-  }, []);
-
   /* ── 스테퍼 초기화 ── */
   useEffect(() => {
     allMsgsRef.current = [...latest];
     if (!initialized.current && latest.length > 0) {
       initialized.current = true;
-      const count = VISIBLE + 1;
+      const count = INIT_SLOTS;
       setSlots(Array.from({ length: count }, (_, i) => ({
         msg: latest[i % latest.length],
         uid: String(uidRef.current++),
@@ -167,19 +199,23 @@ export default function CheerPage() {
     }
   }, [latest]);
 
-  /* ── 한 칸씩 올라가는 스텝 ── */
+  /* ── 한 칸씩 올라가는 스텝 — 첫 슬롯의 실제 DOM 높이만큼 이동 ── */
   const doStep = useCallback(() => {
     if (!stepReady.current || allMsgsRef.current.length === 0) return;
+    const firstChild = slotListRef.current?.children[0] as HTMLElement | undefined;
+    const moveH = firstChild ? firstChild.offsetHeight : 100;
 
     setIsMoving(true);
-    setOffset(-slotHRef.current);
+    setOffset(-moveH);
 
     setTimeout(() => {
       const nextMsg = allMsgsRef.current[headRef.current % allMsgsRef.current.length];
       headRef.current++;
-      setIsMoving(false);
-      setOffset(0);
-      setSlots(prev => [...prev.slice(1), { msg: nextMsg, uid: String(uidRef.current++) }]);
+      flushSync(() => {
+        setIsMoving(false);
+        setOffset(0);
+        setSlots(prev => [...prev.slice(1), { msg: nextMsg, uid: String(uidRef.current++) }]);
+      });
     }, ANIM_MS);
   }, []);
 
@@ -220,13 +256,14 @@ export default function CheerPage() {
       setParticles(p => [...p, ...newP]);
       setTimeout(() => setParticles(p => p.filter(pp => !newP.find(np => np.id === pp.id))), 6000);
 
-      const newMsg = msgs.find((m: Message) => added.includes(m.id));
-      if (newMsg) {
-        setBurstLeave(false);
-        setBurstMsg(newMsg);
-        setTimeout(() => setBurstLeave(true), 5000);
-        setTimeout(() => setBurstMsg(null), 5700);
-        setNewPanelMsgs(prev => [newMsg, ...prev].slice(0, MAX_NEW_PANEL));
+      const newMsgs = msgs
+        .filter((m: Message) => added.includes(m.id))
+        .sort((a: Message, b: Message) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      if (newMsgs.length > 0) {
+        setNewPanelMsgs(prev => [...newMsgs, ...prev].slice(0, MAX_NEW_PANEL));
+        burstQueue.current.push(...newMsgs);
+        if (!burstBusy.current) showNextBurst();
+        fireHearts();
       }
       setTimeout(() => setNewIds(prev => {
         const next = new Set(prev);
@@ -248,10 +285,22 @@ export default function CheerPage() {
   }, []);
 
   useEffect(() => {
-    const tick = () => setTimeStr(new Date().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-    tick();
+    const tick = () => setNow(new Date());
     const iv = setInterval(tick, 1000);
     return () => clearInterval(iv);
+  }, []);
+
+  // 하트 발사 함수 (외부에서도 호출 가능하도록)
+  const fireHearts = useCallback(() => {
+    const newH: HeartParticle[] = Array.from({ length: 12 }, () => ({
+      id: heartPid.current++,
+      x: 10 + Math.random() * 80,
+      dur: 2.2 + Math.random() * 1.4,
+      delay: Math.random() * 0.8,
+      size: 14 + Math.floor(Math.random() * 16),
+    }));
+    setHearts(h => [...h, ...newH]);
+    setTimeout(() => setHearts(h => h.filter(hp => !newH.find(np => np.id === hp.id))), 5000);
   }, []);
 
   return (
@@ -261,6 +310,24 @@ export default function CheerPage() {
       color: ink, fontFamily: 'var(--font-noto-sans)', fontWeight: 400,
       display: 'flex', flexDirection: 'column', position: 'relative',
     }}>
+
+      {/* ── 하트 파티클 (우측 1/3 영역) ── */}
+      {hearts.map(hp => (
+        <div key={hp.id} style={{
+          position: 'fixed',
+          top: 'calc(100vh - 80px)',
+          left: `calc(66.6% + ${hp.x * 0.333}%)`,
+          fontSize: hp.size, lineHeight: 1,
+          animationName: 'heartRise',
+          animationDuration: `${hp.dur}s`,
+          animationDelay: `${hp.delay}s`,
+          animationTimingFunction: 'ease-out',
+          animationFillMode: 'both',
+          animationPlayState: 'running',
+          willChange: 'transform, opacity',
+          pointerEvents: 'none', zIndex: 550,
+        }}>❤️</div>
+      ))}
 
       {/* ── 콘페티 ── */}
       {particles.map(p => (
@@ -337,9 +404,14 @@ export default function CheerPage() {
                 animationName: 'fadeIn', animationDuration: '0.5s',
                 animationDelay: '0.85s', animationFillMode: 'both', opacity: 0,
               }}>
-                <p style={{ fontSize: 19, lineHeight: 1.9, color: ink, margin: '0 0 16px', textAlign: 'center', fontWeight: 500 }}>
-                  {burstMsg.content}
-                </p>
+                {burstMsg.image_url && (
+                  <img src={burstMsg.image_url} alt="" style={{ width: '100%', maxHeight: 200, objectFit: 'cover', borderRadius: 12, marginBottom: 14 }} />
+                )}
+                {burstMsg.content && (
+                  <p style={{ fontSize: 19, lineHeight: 1.9, color: ink, margin: '0 0 16px', textAlign: 'center', fontWeight: 500 }}>
+                    {burstMsg.content}
+                  </p>
+                )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 14, borderTop: '1px solid rgba(201,168,76,0.2)' }}>
                   <span style={{ fontSize: 13, color: inkSoft, fontWeight: 600 }}>— {burstMsg.author_name}</span>
                   {burstMsg.likes_count > 0 && <span style={{ fontSize: 13, color: accentD, fontWeight: 600 }}>🙏 {burstMsg.likes_count}</span>}
@@ -365,8 +437,10 @@ export default function CheerPage() {
             <img src="/logo/dk_logo.png" alt="" style={{ height: 'clamp(16px,1.8vh,28px)', objectFit: 'contain' }}
               onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
             <div>
-              <div style={{ fontSize: 'clamp(13px,1.1vw,22px)', fontWeight: 700, color: accentD, letterSpacing: '0.1em' }}>동광교회 사랑부</div>
-              <div style={{ fontSize: 'clamp(11px,0.85vw,17px)', color: inkSoft, marginTop: 1 }}>응원메세지 🙏</div>
+              <div style={{ fontSize: 'clamp(13px,1.1vw,22px)', fontWeight: 700, color: accentD, letterSpacing: '0.1em' }}>동광교회</div>
+            </div>  
+            <div style={{ fontSize: 'clamp(11px,0.85vw,17px)', color: inkSoft, marginTop: 1 }}>
+              농인부 & 사랑부
             </div>
           </div>
 
@@ -376,16 +450,35 @@ export default function CheerPage() {
 
           {best[0] ? (
             <div style={{
-              background: 'linear-gradient(135deg,#fffdf5,#fff8e8)',
-              border: `2px solid rgba(201,168,76,0.3)`,
-              borderRadius: 16, padding: 'clamp(12px,1.2vh,20px) clamp(14px,1.2vw,22px)', flexShrink: 0,
-              boxShadow: '0 4px 20px rgba(201,168,76,0.12)',
+              background: 'linear-gradient(135deg,#fffbe6 0%,#fde88a 60%,#f8d44c 100%)',
+              border: `2px solid rgba(201,168,76,0.6)`,
+              borderRadius: 18, padding: 'clamp(12px,1.2vh,20px) clamp(14px,1.2vw,22px)', flexShrink: 0,
+              boxShadow: '0 12px 40px rgba(201,168,76,0.35), 0 4px 12px rgba(201,168,76,0.18)',
+              animationName: 'glowPulse', animationDuration: '2.8s',
+              animationTimingFunction: 'ease-in-out', animationIterationCount: 'infinite',
+              position: 'relative', overflow: 'hidden',
             }}>
+              {/* 광채 shimmer */}
+              <div style={{
+                position: 'absolute', top: 0, left: '-60%', width: '40%', height: '100%',
+                background: 'linear-gradient(105deg,transparent,rgba(255,255,255,0.45),transparent)',
+                animationName: 'shimmerSlide', animationDuration: '3s',
+                animationTimingFunction: 'ease-in-out', animationIterationCount: 'infinite',
+                pointerEvents: 'none',
+              }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                <span style={{ fontSize: 'clamp(18px,1.8vw,32px)' }}>👑</span>
-                <span style={{ fontSize: 'clamp(11px,0.85vw,17px)', fontWeight: 700, color: accentD, letterSpacing: '0.2em' }}>1위</span>
+                <span style={{
+                  fontSize: 'clamp(22px,2.2vw,38px)',
+                  animationName: 'crownWiggle', animationDuration: '2.0s',
+                  animationTimingFunction: 'ease-in-out', animationIterationCount: 'infinite',
+                  display: 'inline-block',
+                }}>🙏</span>
+                <span style={{ fontSize: 'clamp(11px,0.85vw,17px)', fontWeight: 800, color: accentD, letterSpacing: '0.2em' }}>1위</span>
               </div>
-              <p style={{ fontSize: 'clamp(14px,1.1vw,22px)', lineHeight: 1.8, color: ink, margin: '0 0 10px', fontWeight: 500 }}>{best[0].content}</p>
+              {best[0].image_url && (
+                <img src={best[0].image_url} alt="" style={{ width: '100%', maxHeight: 'clamp(80px,8vh,140px)', objectFit: 'cover', borderRadius: 10, marginBottom: 10 }} />
+              )}
+              {best[0].content && <p style={{ fontSize: 'clamp(14px,1.1vw,22px)', lineHeight: 1.8, color: ink, margin: '0 0 10px', fontWeight: 500 }}>{best[0].content}</p>}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTop: `1px solid rgba(201,168,76,0.18)` }}>
                 <span style={{ fontSize: 'clamp(12px,0.9vw,18px)', color: inkSoft, fontWeight: 600 }}>— {best[0].author_name}</span>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'rgba(201,168,76,0.1)', padding: '3px 10px', borderRadius: 20 }}>
@@ -407,16 +500,45 @@ export default function CheerPage() {
                     <PiHandsPrayingFill size={13} color={accent} /><span>{msg.likes_count}</span>
                   </div>
                 </div>
-                <p style={{ fontSize: 'clamp(12px,0.95vw,19px)', lineHeight: 1.6, color: inkMid, margin: '0 0 4px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' } as React.CSSProperties}>{msg.content}</p>
+                {msg.image_url && (
+                  <img src={msg.image_url} alt="" style={{ width: '100%', maxHeight: 'clamp(60px,6vh,100px)', objectFit: 'cover', borderRadius: 8, marginBottom: 6 }} />
+                )}
+                {msg.content && <p style={{ fontSize: 'clamp(12px,0.95vw,19px)', lineHeight: 1.6, color: inkMid, margin: '0 0 4px', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' } as React.CSSProperties}>{msg.content}</p>}
                 <span style={{ fontSize: 'clamp(11px,0.85vw,17px)', color: inkSoft }}>— {msg.author_name}</span>
               </div>
             ))}
           </div>
 
-          <div style={{ paddingTop: 10, borderTop: `1px solid rgba(0,0,0,0.06)`, fontSize: 'clamp(10px,0.75vw,15px)', color: inkSoft, lineHeight: 1.9, textAlign: 'center', opacity: 0.7 }}>
+          {/* QR 코드 */}
+          <div style={{
+            paddingTop: 10, borderTop: `1px solid rgba(0,0,0,0.06)`,
+            display: 'flex', alignItems: 'center', gap: 'clamp(10px,1vw,18px)',
+          }}>
+            <img
+              src="/logo/dk-qr.png"
+              alt="QR"
+              style={{
+                width: 'clamp(56px,6vw,100px)', height: 'clamp(56px,6vw,100px)',
+                objectFit: 'contain', flexShrink: 0
+              }}
+            />
+            <div>
+              <div style={{ fontSize: 'clamp(11px,0.85vw,16px)', fontWeight: 700, color: ink, marginBottom: 3 }}>
+                응원 메세지 남기기
+              </div>
+              <div style={{ fontSize: 'clamp(10px,0.75vw,14px)', color: inkSoft, lineHeight: 1.7 }}>
+                QR을 스캔해주세요!
+              </div>
+            </div>
+          </div>
+          {/* <div style={{ fontSize: 'clamp(10px,0.75vw,14px)', color: inkSoft, opacity: 0.6, lineHeight: 1.7, paddingTop: 6 }}>
+            농인부 & 사랑부를 위해 기도해주세요.
+          </div> */}
+
+          {/* <div style={{ fontSize: 'clamp(10px,0.75vw,15px)', color: inkSoft, lineHeight: 1.9, textAlign: 'center', opacity: 0.7 }}>
             "이같이 너희 빛이 사람 앞에 비치게 하여 그들로 너희 착한 행실을 보고
             하늘에 계신 너희 아버지께 영광을 돌리게 하라" — 마태복음 5:16
-          </div>
+          </div> */}
         </aside>
 
         {/* ══ 가운데: 스테퍼 피드 ══ */}
@@ -425,18 +547,17 @@ export default function CheerPage() {
           {/* 상단 페이드 */}
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 72, background: 'linear-gradient(to bottom,#f5f3f0,transparent)', pointerEvents: 'none', zIndex: 10 }} />
 
-          {/* 슬롯 컨테이너 — 화면 꽉 채움, overflow는 main이 clip */}
+          {/* 슬롯 컨테이너 */}
           <div style={{ width: '100%', overflow: 'hidden' }}>
-            <div style={{
+            <div ref={slotListRef} style={{
               transform: `translateY(${offset}px)`,
-              // 스프링 느낌: 약간 오버슈트 후 안착
               transition: isMoving
-                ? `transform ${ANIM_MS}ms cubic-bezier(0.34,1.15,0.64,1)`
+                ? `transform ${ANIM_MS}ms cubic-bezier(0.4,0,0.2,1)`
                 : 'none',
               willChange: 'transform',
             }}>
               {slots.map(item => (
-                <ChatBubble key={item.uid} msg={item.msg} isNew={newIds.has(item.msg.id)} slotH={slotH} />
+                <ChatBubble key={item.uid} msg={item.msg} isNew={newIds.has(item.msg.id)} />
               ))}
             </div>
           </div>
@@ -452,43 +573,109 @@ export default function CheerPage() {
         </main>
 
         {/* ══ 우측: 시계 + NEW 패널 ══ */}
-        <aside style={{
+        <aside ref={heartAsideRef} style={{
           flex: 1, minWidth: 0,
           borderLeft: `1px solid rgba(0,0,0,0.08)`,
           padding: 'clamp(14px,1.4vh,24px) clamp(12px,1vw,24px)',
           display: 'flex', flexDirection: 'column', gap: 'clamp(10px,1vh,18px)',
+          position: 'relative',
           background: '#ffffff', overflow: 'hidden',
         }}>
 
-          {/* 전자시계 */}
-          <div style={{
-            background: '#fff', borderRadius: 14, padding: 'clamp(12px,1.2vh,20px) clamp(14px,1.2vw,22px)',
-            border: '1px solid rgba(0,0,0,0.08)',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            flexShrink: 0,
-          }}>
-            <div style={{
-              fontSize: 'clamp(22px,2.2vw,48px)', fontFamily: "'Courier New','Lucida Console',monospace",
-              color: ink, letterSpacing: '0.04em',
-              fontVariantNumeric: 'tabular-nums', fontWeight: 700, lineHeight: 1,
-              textAlign: 'center',
-            }}>
-              {timeStr}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center', marginTop: 8 }}>
+          {/* 시계 */}
+          {(() => {
+            const h24 = now.getHours();
+            const isPM = h24 >= 12;
+            const h12 = h24 % 12 || 12;
+            const mm = String(now.getMinutes()).padStart(2, '0');
+            const ss = String(now.getSeconds()).padStart(2, '0');
+            const hh = String(h12).padStart(2, '0');
+            const DAYS = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+            const dayStr = DAYS[now.getDay()];
+            const dateStr = `${now.getMonth() + 1}월 ${now.getDate()}일`;
+            return (
               <div style={{
-                width: 6, height: 6, borderRadius: '50%', background: '#e94545',
-                animationName: 'livePulse', animationDuration: '2s',
-                animationTimingFunction: 'ease', animationIterationCount: 'infinite',
-              }} />
-              <span style={{ fontSize: 'clamp(10px,0.75vw,15px)', color: inkSoft, letterSpacing: '0.25em', fontWeight: 600 }}>LIVE</span>
-              {total > 0 && (
-                <span style={{ fontSize: 'clamp(11px,0.85vw,17px)', color: inkSoft }}>
-                  · 응원 <b style={{ color: inkMid }}>{total}</b>개
-                </span>
-              )}
-            </div>
-          </div>
+                background: 'linear-gradient(145deg, #2c1e10 0%, #3d2a14 100%)',
+                borderRadius: 18,
+                padding: 'clamp(14px,1.4vh,24px) clamp(16px,1.4vw,26px)',
+                boxShadow: '0 8px 32px rgba(0,0,0,0.22)',
+                flexShrink: 0,
+                position: 'relative', overflow: 'hidden',
+              }}>
+                {/* 배경 글로우 */}
+                <div style={{
+                  position: 'absolute', top: -20, right: -20, width: 100, height: 100,
+                  borderRadius: '50%', background: 'rgba(201,168,76,0.18)', filter: 'blur(30px)',
+                  pointerEvents: 'none',
+                }} />
+                {/* 날짜 + 요일 */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'clamp(8px,1vh,16px)', paddingBottom: 'clamp(6px,0.7vh,10px)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                  <span style={{ fontSize: 'clamp(10px,0.75vw,14px)', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.12em', fontWeight: 600 }}>
+                    {dateStr}
+                  </span>
+                  <span style={{ fontSize: 'clamp(10px,0.75vw,14px)', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.1em' }}>
+                    {dayStr}
+                  </span>
+                </div>
+                {/* 시간 */}
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 'clamp(2px,0.3vw,6px)' }}>
+                  <span style={{
+                    fontSize: 'clamp(28px,2.8vw,56px)', fontFamily: "'Courier New',monospace",
+                    fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em',
+                    fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+                  }}>{hh}</span>
+                  <span style={{ fontSize: 'clamp(22px,2.2vw,44px)', fontWeight: 800, color: 'rgba(255,255,255,0.4)', lineHeight: 1.05, alignSelf: 'center' }}>:</span>
+                  <span style={{
+                    fontSize: 'clamp(28px,2.8vw,56px)', fontFamily: "'Courier New',monospace",
+                    fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em',
+                    fontVariantNumeric: 'tabular-nums', lineHeight: 1,
+                  }}>{mm}</span>
+                  <span style={{ fontSize: 'clamp(22px,2.2vw,44px)', fontWeight: 800, color: 'rgba(255,255,255,0.25)', lineHeight: 1.05, alignSelf: 'center' }}>:</span>
+                  <span style={{
+                    fontSize: 'clamp(18px,1.6vw,34px)', fontFamily: "'Courier New',monospace",
+                    fontWeight: 700, color: 'rgba(255,255,255,0.45)',
+                    fontVariantNumeric: 'tabular-nums', lineHeight: 1, alignSelf: 'flex-end', paddingBottom: 2,
+                  }}>{ss}</span>
+                  <span style={{
+                    fontSize: 'clamp(9px,0.65vw,13px)', fontWeight: 700,
+                    color: isPM ? '#7ecfff' : '#ffd580',
+                    background: isPM ? 'rgba(126,207,255,0.15)' : 'rgba(255,213,128,0.15)',
+                    padding: '2px 5px', borderRadius: 5,
+                    alignSelf: 'flex-end', paddingBottom: 3, letterSpacing: '0.05em',
+                  }}>{isPM ? 'PM' : 'AM'}</span>
+                </div>
+                {/* LIVE 도트 */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, justifyContent: 'center', marginTop: 'clamp(8px,0.8vh,14px)' }}>
+                  <div style={{
+                    width: 10, height: 10, borderRadius: '50%', background: '#e94545',
+                    animationName: 'livePulse', animationDuration: '1.6s',
+                    animationTimingFunction: 'ease', animationIterationCount: 'infinite',
+                    boxShadow: '0 0 0 0 rgba(233,69,69,0.7)',
+                  }} />
+                  <span style={{ fontSize: 'clamp(9px,0.65vw,13px)', color: 'rgba(255,255,255,0.45)', letterSpacing: '0.3em', fontWeight: 700 }}>LIVE</span>
+                </div>
+                {/* 응원 카운터 강조 블록 */}
+                {total > 0 && (
+                  <div style={{
+                    marginTop: 'clamp(8px,0.8vh,12px)',
+                    background: 'rgba(255,213,128,0.07)',
+                    borderRadius: 12, padding: 'clamp(8px,0.9vh,14px) 0',
+                    textAlign: 'center',
+                    border: '1px solid rgba(255,213,128,0.25)',
+                  }}>
+                    <div style={{ fontSize: 'clamp(7px,0.5vw,10px)', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.25em', marginBottom: 3 }}>응원메세지</div>
+                    <div style={{
+                      fontSize: 'clamp(40px,3.8vw,72px)', fontWeight: 900,
+                      color: '#ffd580', lineHeight: 1,
+                      fontVariantNumeric: 'tabular-nums',
+                      textShadow: '0 0 24px rgba(255,213,128,0.8), 0 0 48px rgba(255,213,128,0.4)',
+                    }}>{displayTotal}</div>
+                    {/* <div style={{ fontSize: 'clamp(9px,0.65vw,12px)', color: 'rgba(255,213,128,0.55)', marginTop: 3, fontWeight: 700, letterSpacing: '0.1em' }}>개</div> */}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* NEW 응원 섹션 */}
           <div style={{
@@ -515,7 +702,7 @@ export default function CheerPage() {
                   marginTop: 8, padding: 'clamp(8px,1vh,16px) clamp(14px,1.2vw,22px)', borderRadius: 12,
                   background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.2)',
                 }}>
-                  <div style={{ fontSize: 'clamp(11px,0.85vw,17px)', color: inkSoft, marginBottom: 4 }}>현재까지 응원</div>
+                  <div style={{ fontSize: 'clamp(11px,0.85vw,17px)', color: inkSoft, marginBottom: 4 }}>응원메세지</div>
                   <div style={{ fontSize: 'clamp(26px,2.5vw,48px)', fontWeight: 800, color: accentD }}>{total}</div>
                   <div style={{ fontSize: 'clamp(10px,0.75vw,15px)', color: inkSoft }}>개</div>
                 </div>
@@ -536,12 +723,24 @@ export default function CheerPage() {
                   animationFillMode: 'both',
                 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 5 }}>
-                    {i === 0 && <span style={{ background: '#e94545', color: '#fff', fontSize: 'clamp(9px,0.7vw,13px)', fontWeight: 800, letterSpacing: '0.1em', padding: '2px 6px', borderRadius: 8 }}>NEW</span>}
-                    <span style={{ fontSize: 'clamp(12px,1vw,20px)', fontWeight: 700, color: ink }}>{msg.author_name}</span>
+                    {i === 0 && <span style={{
+                      background: '#e94545', color: '#fff',
+                      fontSize: 'clamp(9px,0.7vw,13px)', fontWeight: 800, letterSpacing: '0.1em',
+                      padding: '2px 6px', borderRadius: 8,
+                      display: 'inline-block',
+                      animationName: 'badgeShake', animationDuration: '0.55s',
+                      animationDelay: '0.3s', animationTimingFunction: 'ease-in-out',
+                      animationFillMode: 'both',
+                    }}>NEW</span>}
+                    <span style={{ fontSize: 'clamp(12px,1vw,20px)', fontWeight: 700, color: '#1a1a1a' }}>{msg.author_name}</span>
                   </div>
-                  <p style={{ fontSize: 'clamp(12px,0.95vw,19px)', lineHeight: 1.5, color: inkMid, margin: 0, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', wordBreak: 'break-word' } as React.CSSProperties}>
+                  {/* 이미지는 중앙 피드에서만 표시 — 여기선 텍스트 위주로 */}
+                  {msg.image_url && !msg.content && (
+                    <div style={{ fontSize: 'clamp(11px,0.85vw,16px)', color: inkSoft, fontStyle: 'italic', marginBottom: 4 }}>📷 이미지 메시지</div>
+                  )}
+                  {msg.content && <p style={{ fontSize: 'clamp(12px,0.95vw,19px)', lineHeight: 1.5, color: '#333', margin: 0, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', wordBreak: 'break-word', fontWeight: 400 } as React.CSSProperties}>
                     {msg.content}
-                  </p>
+                  </p>}
                 </div>
               ))}
             </div>
@@ -552,15 +751,13 @@ export default function CheerPage() {
       {/* 하단 바 */}
       <footer style={{
         flexShrink: 0, zIndex: 10,
-        borderTop: `1px solid rgba(0,0,0,0.07)`, padding: '7px 28px',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        borderTop: `1px solid rgba(0,0,0,0.07)`, padding: '8px 0',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: 'rgba(255,255,255,0.95)',
+        width: '100%',
       }}>
-        <span style={{ fontSize: 'clamp(11px,0.85vw,17px)', color: inkSoft, letterSpacing: '0.05em' }}>
-          (06959) 서울특별시 동작구 성대로1길 26 제2교육관 갈리리홀 · 주일 오후 12시
-        </span>
-        <span style={{ fontSize: 'clamp(11px,0.85vw,17px)', color: inkSoft, opacity: 0.55 }}>
-          매달 4번째 주는 열린예배 · 동광교회 사랑부
+        <span style={{ fontSize: 'clamp(11px,0.85vw,17px)', color: inkSoft, letterSpacing: '0.08em', textAlign: 'center' }}>
+          농인부 & 사랑부를 위해 기도해주세요.
         </span>
       </footer>
     </div>

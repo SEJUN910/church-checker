@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { title, content, author_name, category } = body;
+  const { title, content, author_name, category, theme_verse } = body;
 
   if (!title || !content) {
     return NextResponse.json({ error: '제목과 내용은 필수입니다' }, { status: 400 });
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
   const supabase = getClient();
   const { data, error } = await supabase
     .from('public_prayer_wall')
-    .insert([{ title, content, author_name: author_name || '익명', category: category || '일반' }])
+    .insert([{ title, content, author_name: author_name || '익명', category: category || '일반', theme_verse: theme_verse || null }])
     .select()
     .single();
 

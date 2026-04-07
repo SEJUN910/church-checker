@@ -314,7 +314,7 @@ export default function PicnicDetailPage() {
           <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
 
             {/* Left: Editor */}
-            <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ flex: 1, minWidth: 0, width: '100%' }}>
               <div style={{ background: '#fff', borderRadius: 14, boxShadow: '0 1px 6px rgba(0,0,0,0.07)', overflow: 'hidden' }}>
                 {/* Toolbar */}
                 {picnic.isAdmin && (
@@ -348,7 +348,7 @@ export default function PicnicDetailPage() {
 
                 {/* Editor area */}
                 <div style={{ padding: '16px 18px' }}>
-                  <div style={{ border: '1px solid #e0e0e0', borderRadius: 10, padding: '14px 16px', minHeight: 400, cursor: 'text', background: '#fff' }}
+                  <div style={{ border: '1px solid #e0e0e0', borderRadius: 10, padding: '14px 16px', minHeight: 300, cursor: 'text', background: '#fff' }}
                     onClick={() => editor?.commands.focus()}>
                     {editor ? (
                       <EditorContent editor={editor} className="tiptap-editor" />
@@ -358,8 +358,8 @@ export default function PicnicDetailPage() {
               </div>
             </div>
 
-            {/* Right: Phone preview */}
-            <div style={{ width: 320, flexShrink: 0, position: 'sticky', top: 24 }}>
+            {/* Right: Phone preview — 모바일에서 숨김 */}
+            <div style={{ width: 320, flexShrink: 0, position: 'sticky', top: 24 }} className="hidden md:block">
               <div style={{ fontSize: 11, color: '#aaa', textAlign: 'center', letterSpacing: '0.05em', marginBottom: 12, textTransform: 'uppercase' }}>미리보기</div>
 
               {/* Phone frame */}

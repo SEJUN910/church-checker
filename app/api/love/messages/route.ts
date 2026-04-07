@@ -28,9 +28,9 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { author_name, content } = await request.json();
+  const { author_name, content, image_url } = await request.json();
 
-  if (!content?.trim()) {
+  if (!content?.trim() && !image_url) {
     return NextResponse.json({ error: '내용을 입력해주세요' }, { status: 400 });
   }
 
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
 
   const { data, error } = await supabase
     .from('public_love_messages')
-    .insert([{ author_name: author_name?.trim() || 'DK', content: content.trim() }])
+    .insert([{ author_name: author_name?.trim() || 'DK', content: content.trim(), image_url: image_url || null }])
     .select()
     .single();
 

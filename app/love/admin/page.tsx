@@ -12,6 +12,7 @@ interface PrayerItem {
   content: string;
   author_name: string;
   category: string;
+  theme_verse: string | null;
   is_visible: boolean;
   created_at: string;
 }
@@ -23,7 +24,7 @@ interface Message {
   created_at: string;
 }
 
-const CATEGORIES = ['일반', '건강', '가족', '학업', '진로', '관계', '감사', '기타'];
+const CATEGORIES = ['농인부', '사랑부', '일반', '건강', '가족', '학업', '진로', '관계', '감사', '기타'];
 const ADMIN_PASSWORD = '7332';
 
 export default function LoveAdminPage() {
@@ -39,10 +40,11 @@ export default function LoveAdminPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingPrayer, setEditingPrayer] = useState<PrayerItem | null>(null);
   const [editContent, setEditContent] = useState('');
+  const [editThemeVerse, setEditThemeVerse] = useState('');
   const [editSaving, setEditSaving] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [toggling, setToggling] = useState<string | null>(null);
-  const [newPrayer, setNewPrayer] = useState({ title: '', content: '', author_name: '', category: '일반' });
+  const [newPrayer, setNewPrayer] = useState({ title: '', content: '', author_name: '', category: '일반', theme_verse: '' });
   const [submitting, setSubmitting] = useState(false);
 
   // 응원메세지
@@ -114,7 +116,7 @@ export default function LoveAdminPage() {
       const created = await res.json();
       setPrayers(prev => [created, ...prev]);
       setShowAddModal(false);
-      setNewPrayer({ title: '', content: '', author_name: '', category: '일반' });
+      setNewPrayer({ title: '', content: '', author_name: '', category: '일반', theme_verse: '' });
       toast.success('등록되었습니다 🙏');
     } catch {
       toast.error('등록 실패');
@@ -130,7 +132,7 @@ export default function LoveAdminPage() {
       const res = await fetch(`/api/love/admin/prayers/${editingPrayer.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', 'x-admin-password': ADMIN_PASSWORD },
-        body: JSON.stringify({ content: editContent }),
+        body: JSON.stringify({ content: editContent, theme_verse: editThemeVerse || null }),
       });
       if (!res.ok) throw new Error();
       const updated = await res.json();
@@ -299,6 +301,9 @@ export default function LoveAdminPage() {
                           </span>
                         </div>
                         <h3 className="text-sm font-bold text-gray-900 mb-0.5">{prayer.title}</h3>
+                        {prayer.theme_verse && (
+                          <p className="text-xs text-amber-700 italic mb-1 line-clamp-1">📖 {prayer.theme_verse}</p>
+                        )}
                         <p
                           className="text-xs text-gray-500 line-clamp-2 prose prose-xs max-w-none"
                           dangerouslySetInnerHTML={{ __html: prayer.content }}
@@ -306,7 +311,7 @@ export default function LoveAdminPage() {
                       </div>
                       <div className="flex flex-col gap-1.5 shrink-0">
                         <button
-                          onClick={() => { setEditingPrayer(prayer); setEditContent(prayer.content); }}
+                          onClick={() => { setEditingPrayer(prayer); setEditContent(prayer.content); setEditThemeVerse(prayer.theme_verse || ''); }}
                           className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-50 text-blue-600 hover:bg-blue-100"
                         >
                           수정
@@ -405,6 +410,16 @@ export default function LoveAdminPage() {
                 />
               </div>
               <div>
+                <label className="block text-sm font-bold text-gray-700 mb-1.5">주제말씀 <span className="text-gray-400 font-normal">(선택)</span></label>
+                <input
+                  type="text"
+                  value={newPrayer.theme_verse}
+                  onChange={(e) => setNewPrayer({ ...newPrayer, theme_verse: e.target.value })}
+                  className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-purple-400 focus:outline-none"
+                  placeholder="예: 빌립보서 4:13 — 내게 능력 주시는 자 안에서..."
+                />
+              </div>
+              <div>
                 <label className="block text-sm font-bold text-gray-700 mb-1.5">내용 *</label>
                 <Suspense fallback={<div className="h-40 rounded-xl border-2 border-gray-200 flex items-center justify-center text-sm text-gray-400">에디터 로딩 중...</div>}>
                   <PrayerEditor
@@ -435,6 +450,17 @@ export default function LoveAdminPage() {
             <div className="mb-4 px-3">
               <h2 className="text-lg font-extrabold text-gray-900">기도제목 수정</h2>
               <p className="text-sm text-gray-400 mt-0.5 font-medium">{editingPrayer.title}</p>
+            </div>
+
+            <div className="px-3 mb-3">
+              <label className="block text-sm font-bold text-gray-700 mb-1.5">주제말씀 <span className="text-gray-400 font-normal">(선택)</span></label>
+              <input
+                type="text"
+                value={editThemeVerse}
+                onChange={(e) => setEditThemeVerse(e.target.value)}
+                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 text-sm text-gray-900 placeholder:text-gray-400 focus:border-purple-400 focus:outline-none"
+                placeholder="예: 빌립보서 4:13 — 내게 능력 주시는 자 안에서..."
+              />
             </div>
 
             <Suspense fallback={<div className="h-40 rounded-xl border-2 border-gray-200 flex items-center justify-center text-sm text-gray-400">에디터 로딩 중...</div>}>
