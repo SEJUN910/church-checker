@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { flushSync } from 'react-dom';
-import { PiHandsPrayingFill } from 'react-icons/pi';
+import { PiHandsPrayingFill, PiTrophy, PiChatsCircle, PiClock } from 'react-icons/pi';
 
 interface Message {
   id: string;
@@ -34,7 +34,8 @@ function hashId(id: string): number {
 
 const accent  = '#c9a84c';
 const accentD = '#7a5a10';
-const ink     = '#1a1a1a';
+const skyD    = '#2d6ea8';
+const ink     = '#1c1c19';
 const inkMid  = '#444444';
 const inkSoft = '#888888';
 
@@ -110,7 +111,7 @@ function ChatBubble({ msg, isNew }: { msg: Message; isNew: boolean }) {
         display: 'flex', alignItems: 'center', gap: 6, marginTop: 4,
         flexDirection: isLeft ? 'row' : 'row-reverse',
       }}>
-        <span style={{ fontSize: 12, fontWeight: 700, color: '#2a2a2a' }}>{msg.author_name}</span>
+        <span style={{ fontSize: 14, fontWeight: 700, color: '#1c1c19' }}>{msg.author_name}</span>
         {isNew && (
           <span style={{ background: '#e94545', color: '#fff', fontSize: 9, fontWeight: 800, letterSpacing: '0.1em', padding: '2px 6px', borderRadius: 10 }}>NEW</span>
         )}
@@ -141,6 +142,15 @@ export default function CheerPage() {
   const [burstLeave, setBurstLeave]     = useState(false);
   const burstQueue                      = useRef<Message[]>([]);
   const burstBusy                       = useRef(false);
+  const [isMobile, setIsMobile]         = useState(false);
+  const [mobileTab, setMobileTab]       = useState(1); // 0=베스트, 1=피드, 2=시계
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
 
   /* ── 카운트업 애니메이션 ── */
   useEffect(() => {
@@ -422,27 +432,76 @@ export default function CheerPage() {
         </div>
       )}
 
+      {/* ── 모바일 헤더 ── */}
+      {isMobile && (() => {
+        const h24 = now.getHours();
+        const isPM = h24 >= 12;
+        const h12 = h24 % 12 || 12;
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        const hh = String(h12).padStart(2, '0');
+        const DAYS = ['일','월','화','수','목','금','토'];
+        return (
+          <div style={{
+            flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '10px 16px', background: '#f8f6f2',
+            borderBottom: '1px solid rgba(0,0,0,0.07)',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <img src="/logo/dk_logo.png" alt="" style={{ height: 20, objectFit: 'contain' }}
+                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <span style={{ fontSize: 14, fontWeight: 700, color: accentD }}>동광교회</span>
+              <span style={{ fontSize: 12, color: inkSoft }}>농인부 & 사랑부</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{
+                  width: 6, height: 6, borderRadius: '50%', background: '#e94545',
+                  animationName: 'livePulse', animationDuration: '1.6s',
+                  animationTimingFunction: 'ease', animationIterationCount: 'infinite',
+                }} />
+                <span style={{ fontSize: 10, color: inkSoft, fontWeight: 700, letterSpacing: '0.2em' }}>LIVE</span>
+              </div>
+              <span style={{ fontSize: 16, fontWeight: 800, fontFamily: "'Courier New',monospace", color: ink }}>
+                {hh}:{mm}
+              </span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: isPM ? skyD : accentD,
+                background: isPM ? 'rgba(91,155,213,0.12)' : 'rgba(201,168,76,0.12)',
+                padding: '2px 6px', borderRadius: 4 }}>{isPM ? 'PM' : 'AM'}</span>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* ── 본문 ── */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div style={{ flex: 1, overflow: 'hidden', position: 'relative' }}>
+        {/* 모바일: 슬라이딩 래퍼 */}
+        <div style={{
+          display: 'flex', height: '100%',
+          width: isMobile ? '300%' : '100%',
+          transform: isMobile ? `translateX(${-mobileTab * (100/3)}%)` : 'none',
+          transition: 'transform 0.35s cubic-bezier(0.4,0,0.2,1)',
+        }}>
 
         {/* ══ 좌측: 베스트 ══ */}
         <aside style={{
-          flex: 1, minWidth: 0,
-          borderRight: `1px solid rgba(0,0,0,0.08)`,
+          ...(isMobile ? { width: '33.333%', flexShrink: 0 } : { flex: 1 }),
+          minWidth: 0,
           padding: 'clamp(14px,1.4vh,24px) clamp(14px,1.2vw,28px)',
           display: 'flex', flexDirection: 'column', gap: 'clamp(8px,0.8vh,16px)',
-          background: '#ffffff', overflow: 'hidden',
+          background: '#f8f6f2', overflowY: 'auto', overflowX: 'hidden',
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 'clamp(8px,0.8vh,14px)', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-            <img src="/logo/dk_logo.png" alt="" style={{ height: 'clamp(16px,1.8vh,28px)', objectFit: 'contain' }}
-              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-            <div>
-              <div style={{ fontSize: 'clamp(13px,1.1vw,22px)', fontWeight: 700, color: accentD, letterSpacing: '0.1em' }}>동광교회</div>
-            </div>  
-            <div style={{ fontSize: 'clamp(11px,0.85vw,17px)', color: inkSoft, marginTop: 1 }}>
-              농인부 & 사랑부
+          {!isMobile && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 'clamp(8px,0.8vh,14px)' }}>
+              <img src="/logo/dk_logo.png" alt="" style={{ height: 'clamp(16px,1.8vh,28px)', objectFit: 'contain' }}
+                onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+              <div>
+                <div style={{ fontSize: 'clamp(13px,1.1vw,22px)', fontWeight: 700, color: accentD, letterSpacing: '0.1em' }}>동광교회</div>
+              </div>
+              <div style={{ fontSize: 'clamp(11px,0.85vw,17px)', color: inkSoft, marginTop: 1 }}>
+                농인부 & 사랑부
+              </div>
             </div>
-          </div>
+          )}
 
           <div style={{ alignSelf: 'flex-start', fontSize: 'clamp(10px,0.75vw,15px)', letterSpacing: '0.3em', fontWeight: 700, color: accent, background: 'rgba(201,168,76,0.1)', padding: '4px 12px', borderRadius: 20 }}>
             ✦ 인기 응원
@@ -472,7 +531,7 @@ export default function CheerPage() {
                   animationName: 'crownWiggle', animationDuration: '2.0s',
                   animationTimingFunction: 'ease-in-out', animationIterationCount: 'infinite',
                   display: 'inline-block',
-                }}>🙏</span>
+                }}>🥇</span>
                 <span style={{ fontSize: 'clamp(11px,0.85vw,17px)', fontWeight: 800, color: accentD, letterSpacing: '0.2em' }}>1위</span>
               </div>
               {best[0].image_url && (
@@ -511,23 +570,34 @@ export default function CheerPage() {
 
           {/* QR 코드 */}
           <div style={{
-            paddingTop: 10, borderTop: `1px solid rgba(0,0,0,0.06)`,
-            display: 'flex', alignItems: 'center', gap: 'clamp(10px,1vw,18px)',
+            background: 'linear-gradient(135deg, #eef6ff 0%, #e8f4ff 100%)',
+            borderRadius: 16,
+            padding: 'clamp(10px,1vh,16px) clamp(12px,1vw,18px)',
+            display: 'flex', alignItems: 'center', gap: 'clamp(10px,1vw,16px)',
+            flexShrink: 0,
           }}>
-            <img
-              src="/logo/dk-qr.png"
-              alt="QR"
-              style={{
-                width: 'clamp(56px,6vw,100px)', height: 'clamp(56px,6vw,100px)',
-                objectFit: 'contain', flexShrink: 0
-              }}
-            />
+            <div style={{
+              background: '#ffffff',
+              borderRadius: 12,
+              padding: 4,
+              boxShadow: '0 4px 16px rgba(91,155,213,0.18)',
+              flexShrink: 0,
+            }}>
+              <img
+                src="/logo/dk-qr.png"
+                alt="QR"
+                style={{
+                  width: 'clamp(52px,5.5vw,88px)', height: 'clamp(52px,5.5vw,88px)',
+                  objectFit: 'contain', display: 'block',
+                }}
+              />
+            </div>
             <div>
-              <div style={{ fontSize: 'clamp(11px,0.85vw,16px)', fontWeight: 700, color: ink, marginBottom: 3 }}>
+              <div style={{ fontSize: 'clamp(11px,0.9vw,17px)', fontWeight: 800, color: skyD, marginBottom: 4, letterSpacing: '0.02em' }}>
                 응원 메세지 남기기
               </div>
-              <div style={{ fontSize: 'clamp(10px,0.75vw,14px)', color: inkSoft, lineHeight: 1.7 }}>
-                QR을 스캔해주세요!
+              <div style={{ fontSize: 'clamp(10px,0.75vw,14px)', color: inkMid, lineHeight: 1.7 }}>
+                QR 코드를 스캔하면<br />바로 참여할 수 있어요!
               </div>
             </div>
           </div>
@@ -542,7 +612,10 @@ export default function CheerPage() {
         </aside>
 
         {/* ══ 가운데: 스테퍼 피드 ══ */}
-        <main style={{ flex: 2, position: 'relative', overflow: 'hidden' }}>
+        <main style={{
+          ...(isMobile ? { width: '33.333%', flexShrink: 0 } : { flex: 2 }),
+          position: 'relative', overflow: 'hidden',
+        }}>
 
           {/* 상단 페이드 */}
           <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 72, background: 'linear-gradient(to bottom,#f5f3f0,transparent)', pointerEvents: 'none', zIndex: 10 }} />
@@ -574,12 +647,12 @@ export default function CheerPage() {
 
         {/* ══ 우측: 시계 + NEW 패널 ══ */}
         <aside ref={heartAsideRef} style={{
-          flex: 1, minWidth: 0,
-          borderLeft: `1px solid rgba(0,0,0,0.08)`,
+          ...(isMobile ? { width: '33.333%', flexShrink: 0 } : { flex: 1 }),
+          minWidth: 0,
           padding: 'clamp(14px,1.4vh,24px) clamp(12px,1vw,24px)',
           display: 'flex', flexDirection: 'column', gap: 'clamp(10px,1vh,18px)',
           position: 'relative',
-          background: '#ffffff', overflow: 'hidden',
+          background: '#f8f6f2', overflowY: 'auto', overflowX: 'hidden',
         }}>
 
           {/* 시계 */}
@@ -595,25 +668,25 @@ export default function CheerPage() {
             const dateStr = `${now.getMonth() + 1}월 ${now.getDate()}일`;
             return (
               <div style={{
-                background: 'linear-gradient(145deg, #2c1e10 0%, #3d2a14 100%)',
+                background: '#f4f9ff',
                 borderRadius: 18,
-                padding: 'clamp(14px,1.4vh,24px) clamp(16px,1.4vw,26px)',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.22)',
+                padding: 'clamp(14px,1.4vh,22px) clamp(16px,1.4vw,24px)',
+                boxShadow: '0 4px 20px rgba(91,155,213,0.12)',
                 flexShrink: 0,
                 position: 'relative', overflow: 'hidden',
               }}>
                 {/* 배경 글로우 */}
                 <div style={{
                   position: 'absolute', top: -20, right: -20, width: 100, height: 100,
-                  borderRadius: '50%', background: 'rgba(201,168,76,0.18)', filter: 'blur(30px)',
+                  borderRadius: '50%', background: 'rgba(91,155,213,0.12)', filter: 'blur(30px)',
                   pointerEvents: 'none',
                 }} />
                 {/* 날짜 + 요일 */}
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'clamp(8px,1vh,16px)', paddingBottom: 'clamp(6px,0.7vh,10px)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                  <span style={{ fontSize: 'clamp(10px,0.75vw,14px)', color: 'rgba(255,255,255,0.55)', letterSpacing: '0.12em', fontWeight: 600 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'clamp(8px,1vh,14px)', paddingBottom: 'clamp(6px,0.7vh,10px)', borderBottom: '1px solid rgba(91,155,213,0.15)' }}>
+                  <span style={{ fontSize: 'clamp(10px,0.75vw,14px)', color: skyD, letterSpacing: '0.08em', fontWeight: 700 }}>
                     {dateStr}
                   </span>
-                  <span style={{ fontSize: 'clamp(10px,0.75vw,14px)', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.1em' }}>
+                  <span style={{ fontSize: 'clamp(10px,0.75vw,14px)', color: inkSoft, letterSpacing: '0.08em', fontWeight: 500 }}>
                     {dayStr}
                   </span>
                 </div>
@@ -621,61 +694,65 @@ export default function CheerPage() {
                 <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 'clamp(2px,0.3vw,6px)' }}>
                   <span style={{
                     fontSize: 'clamp(28px,2.8vw,56px)', fontFamily: "'Courier New',monospace",
-                    fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em',
+                    fontWeight: 800, color: ink, letterSpacing: '-0.02em',
                     fontVariantNumeric: 'tabular-nums', lineHeight: 1,
                   }}>{hh}</span>
-                  <span style={{ fontSize: 'clamp(22px,2.2vw,44px)', fontWeight: 800, color: 'rgba(255,255,255,0.4)', lineHeight: 1.05, alignSelf: 'center' }}>:</span>
+                  <span style={{ fontSize: 'clamp(22px,2.2vw,44px)', fontWeight: 800, color: 'rgba(0,0,0,0.2)', lineHeight: 1.05, alignSelf: 'center' }}>:</span>
                   <span style={{
                     fontSize: 'clamp(28px,2.8vw,56px)', fontFamily: "'Courier New',monospace",
-                    fontWeight: 800, color: '#ffffff', letterSpacing: '-0.02em',
+                    fontWeight: 800, color: ink, letterSpacing: '-0.02em',
                     fontVariantNumeric: 'tabular-nums', lineHeight: 1,
                   }}>{mm}</span>
-                  <span style={{ fontSize: 'clamp(22px,2.2vw,44px)', fontWeight: 800, color: 'rgba(255,255,255,0.25)', lineHeight: 1.05, alignSelf: 'center' }}>:</span>
+                  <span style={{ fontSize: 'clamp(22px,2.2vw,44px)', fontWeight: 800, color: 'rgba(0,0,0,0.15)', lineHeight: 1.05, alignSelf: 'center' }}>:</span>
                   <span style={{
                     fontSize: 'clamp(18px,1.6vw,34px)', fontFamily: "'Courier New',monospace",
-                    fontWeight: 700, color: 'rgba(255,255,255,0.45)',
+                    fontWeight: 700, color: inkSoft,
                     fontVariantNumeric: 'tabular-nums', lineHeight: 1, alignSelf: 'flex-end', paddingBottom: 2,
                   }}>{ss}</span>
                   <span style={{
                     fontSize: 'clamp(9px,0.65vw,13px)', fontWeight: 700,
-                    color: isPM ? '#7ecfff' : '#ffd580',
-                    background: isPM ? 'rgba(126,207,255,0.15)' : 'rgba(255,213,128,0.15)',
-                    padding: '2px 5px', borderRadius: 5,
+                    color: isPM ? skyD : accentD,
+                    background: isPM ? 'rgba(91,155,213,0.12)' : 'rgba(201,168,76,0.12)',
+                    padding: '2px 6px', borderRadius: 5,
                     alignSelf: 'flex-end', paddingBottom: 3, letterSpacing: '0.05em',
                   }}>{isPM ? 'PM' : 'AM'}</span>
                 </div>
                 {/* LIVE 도트 */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, justifyContent: 'center', marginTop: 'clamp(8px,0.8vh,14px)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 7, justifyContent: 'center', marginTop: 'clamp(8px,0.8vh,12px)' }}>
                   <div style={{
-                    width: 10, height: 10, borderRadius: '50%', background: '#e94545',
+                    width: 8, height: 8, borderRadius: '50%', background: '#e94545',
                     animationName: 'livePulse', animationDuration: '1.6s',
                     animationTimingFunction: 'ease', animationIterationCount: 'infinite',
                     boxShadow: '0 0 0 0 rgba(233,69,69,0.7)',
                   }} />
-                  <span style={{ fontSize: 'clamp(9px,0.65vw,13px)', color: 'rgba(255,255,255,0.45)', letterSpacing: '0.3em', fontWeight: 700 }}>LIVE</span>
+                  <span style={{ fontSize: 'clamp(9px,0.65vw,13px)', color: inkSoft, letterSpacing: '0.3em', fontWeight: 700 }}>LIVE</span>
                 </div>
-                {/* 응원 카운터 강조 블록 */}
-                {total > 0 && (
-                  <div style={{
-                    marginTop: 'clamp(8px,0.8vh,12px)',
-                    background: 'rgba(255,213,128,0.07)',
-                    borderRadius: 12, padding: 'clamp(8px,0.9vh,14px) 0',
-                    textAlign: 'center',
-                    border: '1px solid rgba(255,213,128,0.25)',
-                  }}>
-                    <div style={{ fontSize: 'clamp(7px,0.5vw,10px)', color: 'rgba(255,255,255,0.35)', letterSpacing: '0.25em', marginBottom: 3 }}>응원메세지</div>
-                    <div style={{
-                      fontSize: 'clamp(40px,3.8vw,72px)', fontWeight: 900,
-                      color: '#ffd580', lineHeight: 1,
-                      fontVariantNumeric: 'tabular-nums',
-                      textShadow: '0 0 24px rgba(255,213,128,0.8), 0 0 48px rgba(255,213,128,0.4)',
-                    }}>{displayTotal}</div>
-                    {/* <div style={{ fontSize: 'clamp(9px,0.65vw,12px)', color: 'rgba(255,213,128,0.55)', marginTop: 3, fontWeight: 700, letterSpacing: '0.1em' }}>개</div> */}
-                  </div>
-                )}
               </div>
             );
           })()}
+
+          {/* 응원 카운터 — 시계와 분리하여 독립 카드로 */}
+          {total > 0 && (
+            <div style={{
+              background: 'linear-gradient(135deg, #fff9ee 0%, #fff4e0 100%)',
+              borderRadius: 16,
+              padding: 'clamp(12px,1.2vh,20px) clamp(14px,1.2vw,22px)',
+              flexShrink: 0,
+              textAlign: 'center',
+            }}>
+              <div style={{ fontSize: 'clamp(10px,0.78vw,14px)', color: inkSoft, fontWeight: 600, marginBottom: 4, letterSpacing: '0.05em' }}>
+                현재 도착한 응원
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'center', gap: 4 }}>
+                <div style={{
+                  fontSize: 'clamp(38px,3.6vw,68px)', fontWeight: 900,
+                  color: accentD, lineHeight: 1,
+                  fontVariantNumeric: 'tabular-nums',
+                }}>{displayTotal}</div>
+                <div style={{ fontSize: 'clamp(14px,1.1vw,20px)', fontWeight: 700, color: accent, paddingBottom: 'clamp(4px,0.5vh,8px)' }}>개</div>
+              </div>
+            </div>
+          )}
 
           {/* NEW 응원 섹션 */}
           <div style={{
@@ -697,16 +774,6 @@ export default function CheerPage() {
               <div style={{ fontSize: 'clamp(12px,0.95vw,19px)', color: inkSoft, opacity: 0.7, lineHeight: 1.8 }}>
                 새 응원메세지가<br />도착하면 여기에<br />표시됩니다
               </div>
-              {total > 0 && (
-                <div style={{
-                  marginTop: 8, padding: 'clamp(8px,1vh,16px) clamp(14px,1.2vw,22px)', borderRadius: 12,
-                  background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.2)',
-                }}>
-                  <div style={{ fontSize: 'clamp(11px,0.85vw,17px)', color: inkSoft, marginBottom: 4 }}>응원메세지</div>
-                  <div style={{ fontSize: 'clamp(26px,2.5vw,48px)', fontWeight: 800, color: accentD }}>{total}</div>
-                  <div style={{ fontSize: 'clamp(10px,0.75vw,15px)', color: inkSoft }}>개</div>
-                </div>
-              )}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(6px,0.7vh,12px)', overflow: 'hidden' }}>
@@ -746,19 +813,47 @@ export default function CheerPage() {
             </div>
           )}
         </aside>
+        </div>{/* 슬라이딩 래퍼 끝 */}
       </div>
 
-      {/* 하단 바 */}
+      {/* 하단 바 — 모바일: 탭 네비게이션 / PC: 텍스트 */}
       <footer style={{
         flexShrink: 0, zIndex: 10,
-        borderTop: `1px solid rgba(0,0,0,0.07)`, padding: '8px 0',
+        borderTop: `1px solid rgba(0,0,0,0.07)`,
+        padding: isMobile ? '0' : '8px 0',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         background: 'rgba(255,255,255,0.95)',
         width: '100%',
       }}>
-        <span style={{ fontSize: 'clamp(11px,0.85vw,17px)', color: inkSoft, letterSpacing: '0.08em', textAlign: 'center' }}>
-          농인부 & 사랑부를 위해 기도해주세요.
-        </span>
+        {isMobile ? (
+          <div style={{ display: 'flex', width: '100%' }}>
+            {([
+              { label: '인기응원', Icon: PiTrophy },
+              { label: '응원피드', Icon: PiChatsCircle },
+              { label: '시계', Icon: PiClock },
+            ] as const).map(({ label, Icon }, i) => (
+              <button
+                key={i}
+                onClick={() => setMobileTab(i)}
+                style={{
+                  flex: 1, border: 'none', background: 'none', cursor: 'pointer',
+                  padding: '10px 0 8px',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                  color: mobileTab === i ? accentD : inkSoft,
+                  borderTop: mobileTab === i ? `2px solid ${accent}` : '2px solid transparent',
+                  transition: 'all 0.2s',
+                }}
+              >
+                <Icon size={18} />
+                <span style={{ fontSize: 10, fontWeight: mobileTab === i ? 700 : 400, letterSpacing: '0.03em' }}>{label}</span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <span style={{ fontSize: 'clamp(11px,0.85vw,17px)', color: inkSoft, letterSpacing: '0.08em', textAlign: 'center' }}>
+            농인부 & 사랑부를 위해 기도해주세요.
+          </span>
+        )}
       </footer>
     </div>
   );

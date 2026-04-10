@@ -52,3 +52,4 @@ key.properties
 local.properties
 .gradle
 .idea
+.gstack/

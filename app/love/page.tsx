@@ -486,7 +486,6 @@ export default function LovePage() {
               borderRadius: 6, padding: '22px 24px',
               textAlign: 'center',
               boxShadow: '0 2px 12px rgba(184,154,90,0.12)',
-              transition: 'transform 0.15s, box-shadow 0.15s',
             }}
             onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = 'translateY(-1px)'; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 6px 20px rgba(184,154,90,0.18)'; }}
             onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = ''; (e.currentTarget as HTMLDivElement).style.boxShadow = '0 2px 12px rgba(184,154,90,0.12)'; }}
