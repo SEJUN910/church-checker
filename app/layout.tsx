@@ -40,8 +40,8 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <head>
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" href="/icon-192.png" />
+        <link rel="icon" href="/logo/dk_logo.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/logo/dk_logo.png" />
       </head>
       <body
         className={`${notoSansKR.variable} ${notoSerif.variable} antialiased`}
