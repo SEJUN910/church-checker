@@ -534,20 +534,25 @@ export default function LovePage() {
               </h2>
               <div style={{ flex: 1, height: 1, background: `linear-gradient(to right, ${parchment}, transparent)` }} />
             </div>
-            {/* <button
-              onClick={openModal}
-              style={{
-                flexShrink: 0, marginLeft: 16,
-                background: ink, color: cream,
-                border: 'none', cursor: 'pointer',
-                padding: '8px 18px', borderRadius: 2,
-                fontSize: 12, fontWeight: 500, letterSpacing: '0.06em',
-                transition: 'all 0.2s',
-                fontFamily: 'var(--font-noto-sans)',
-              }}
+            <Link href="/love/cheer" style={{
+              flexShrink: 0, marginLeft: 16, textDecoration: 'none',
+              display: 'flex', alignItems: 'center', gap: 5,
+              padding: '5px 12px', borderRadius: 20,
+              background: 'rgba(233,69,69,0.07)',
+              color: '#c0392b',
+              fontSize: 12, fontWeight: 600, letterSpacing: '0.04em',
+              transition: 'background 0.2s',
+            }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'rgba(233,69,69,0.14)')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'rgba(233,69,69,0.07)')}
             >
-              메세지 남기기
-            </button> */}
+              <span style={{
+                width: 6, height: 6, borderRadius: '50%', background: '#e94545',
+                display: 'inline-block', flexShrink: 0,
+                animation: 'livePulse 1.6s ease infinite',
+              }} />
+              LIVE
+            </Link>
           </div>
 
           {/* 정렬 버튼 */}
