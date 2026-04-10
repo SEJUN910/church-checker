@@ -15,6 +15,7 @@ interface PrayerItem {
   theme_verse: string | null;
   is_visible: boolean;
   created_at: string;
+  updated_at?: string | null;
 }
 
 interface Message {
@@ -297,8 +298,13 @@ export default function LoveAdminPage() {
                             {prayer.is_visible ? '공개' : '숨김'}
                           </span>
                           <span className="text-xs text-gray-400">
-                            {new Date(prayer.created_at).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                            등록 {new Date(prayer.created_at).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
                           </span>
+                          {prayer.updated_at && (
+                            <span className="text-xs text-blue-400">
+                              수정 {new Date(prayer.updated_at).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                            </span>
+                          )}
                         </div>
                         <h3 className="text-sm font-bold text-gray-900 mb-0.5">{prayer.title}</h3>
                         {prayer.theme_verse && (

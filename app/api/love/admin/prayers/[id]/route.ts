@@ -37,7 +37,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const supabase = getClient();
   const { data, error } = await supabase
     .from('public_prayer_wall')
-    .update(body)
+    .update({ ...body, updated_at: new Date().toISOString() })
     .eq('id', id)
     .select()
     .single();

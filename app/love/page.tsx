@@ -13,6 +13,7 @@ interface PrayerItem {
   category: string;
   theme_verse: string | null;
   created_at: string;
+  updated_at?: string | null;
 }
 
 interface Message {
@@ -175,7 +176,7 @@ export default function LovePage() {
     try {
       const { data } = await supabase
         .from('public_prayer_wall')
-        .select('id, title, content, category, created_at, theme_verse')
+        .select('id, title, content, category, created_at, updated_at, theme_verse')
         .eq('is_visible', true)
         .order('created_at', { ascending: false });
       setPrayers(data || []);
@@ -466,7 +467,10 @@ export default function LovePage() {
                       </div>
                     )}
                     <div className="text-end" style={{ marginTop: 10, fontSize: 11, color: inkSoft, letterSpacing: '0.04em' }}>
-                      {new Date(prayer.created_at).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}
+                      {prayer.updated_at
+                        ? `${new Date(prayer.updated_at).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })}`
+                        : new Date(prayer.created_at).toLocaleDateString('ko-KR', { month: 'long', day: 'numeric' })
+                      }
                     </div>
                   </div>
                 )
