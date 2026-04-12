@@ -733,7 +733,7 @@ export default function LovePage() {
                 <textarea
                   value={content}
                   onChange={e => setContent(e.target.value)}
-                  onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e as any); } }}
+                  // onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmit(e as any); } }}
                   placeholder="응원의 말씀이나 기도를 남겨주세요"
                   rows={4}
                   autoFocus
