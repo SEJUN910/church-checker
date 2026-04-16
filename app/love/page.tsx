@@ -60,7 +60,6 @@ async function compressImage(file: File, maxBytes = 5 * 1024 * 1024): Promise<Bl
 
 const cream     = '#f7f3ed';
 const parchment = '#ede7dc';
-const gold      = '#b89a5a';
 const goldLight = '#d4b87a';
 const ink       = '#1e1a14';
 const inkMid    = '#4a4236';

@@ -32,6 +32,14 @@ const CONFETTI_COLORS = ['#f4a0a8','#f9c98a','#fde68a','#a7d9b0','#a5c8f0','#c4b
 const CONFETTI_ANIMS  = ['confettiPopA','confettiPopB','confettiPopC','confettiPopD','confettiPopE','confettiPopF','confettiPopG','confettiPopH'];
 const FLOAT_ANIMS     = ['floatA','floatB','floatC'];
 
+const CHEER_SETS = [
+  { section: '🏆 TOP 응원',      first: '가장 빛난 응원',  second: '따뜻한 응원',   third: '함께한 응원'   },
+  { section: '✨ 빛난 응원',      first: '가장 빛난 응원',  second: '반짝인 응원',   third: '따뜻한 응원'   },
+  { section: '🙏 공감한 응원',    first: '가장 공감한 응원', second: '마음 닿은 응원', third: '함께 나눈 응원' },
+  { section: '💛 함께한 응원',    first: '가장 따뜻한 응원', second: '마음 모은 응원', third: '사랑 담은 응원' },
+  { section: '🔥 뜨거운 응원',    first: '가장 뜨거운 응원', second: '열정 응원',     third: '활기찬 응원'   },
+];
+
 function hashId(id: string): number {
   let h = 0;
   for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
@@ -85,6 +93,7 @@ function ChatBubble({ msg, isNew }: { msg: Message; isNew: boolean }) {
                 maxHeight: 180,
                 minHeight: 80,
                 objectFit: 'contain',
+                objectPosition: isLeft ? 'left' : 'right',
                 borderRadius: 10,
                 marginBottom: msg.content ? 6 : 0,
               }}
@@ -150,6 +159,7 @@ export default function CheerClient({ initialLatest, initialBest, initialTotal }
   const burstBusy                       = useRef(false);
   const [isMobile, setIsMobile]         = useState(false);
   const [mobileTab, setMobileTab]       = useState(1); // 0=베스트, 1=피드, 2=시계
+  const [cheerLabel, setCheerLabel]     = useState(() => CHEER_SETS[Math.floor(Math.random() * CHEER_SETS.length)]);
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 640);
@@ -198,8 +208,9 @@ export default function CheerClient({ initialLatest, initialBest, initialTotal }
   const stepReady   = useRef(false);
 
   // 초기 메시지 ID를 미리 세팅 — 첫 폴링에서 기존 메시지를 NEW로 오인하지 않도록
-  const prevIds = useRef<Set<string>>(new Set(initialLatest.map(m => m.id)));
-  const pid     = useRef(0);
+  const prevIds     = useRef<Set<string>>(new Set(initialLatest.map(m => m.id)));
+  const isFirstFetch = useRef(true);
+  const pid         = useRef(0);
 
   /* ── 스테퍼 초기화 ── */
   useEffect(() => {
@@ -253,7 +264,11 @@ export default function CheerClient({ initialLatest, initialBest, initialTotal }
     const topMsgs: Message[] = (j2.data || []).slice(0, 3);
 
     const curIds = new Set(msgs.map((m: Message) => m.id));
-    const added  = [...curIds].filter(id => prevIds.current.size > 0 && !prevIds.current.has(id));
+    // 첫 번째 호출은 기준선 설정 — 새로 고침 시 기존 메시지가 NEW로 뜨는 것 방지
+    const added  = isFirstFetch.current
+      ? []
+      : [...curIds].filter(id => prevIds.current.size > 0 && !prevIds.current.has(id));
+    isFirstFetch.current = false;
 
     if (added.length > 0) {
       setNewIds(prev => new Set([...prev, ...added]));
@@ -304,6 +319,16 @@ export default function CheerClient({ initialLatest, initialBest, initialTotal }
   useEffect(() => {
     const tick = () => setNow(new Date());
     const iv = setInterval(tick, 1000);
+    return () => clearInterval(iv);
+  }, []);
+
+  useEffect(() => {
+    const iv = setInterval(() => {
+      setCheerLabel(prev => {
+        const next = CHEER_SETS.filter(s => s !== prev);
+        return next[Math.floor(Math.random() * next.length)];
+      });
+    }, 10_000);
     return () => clearInterval(iv);
   }, []);
 
@@ -509,7 +534,7 @@ export default function CheerClient({ initialLatest, initialBest, initialTotal }
           )}
 
           <div style={{ alignSelf: 'flex-start', fontSize: 'clamp(12px,0.75vw,15px)', letterSpacing: '0.3em', fontWeight: 700, color: accent, background: 'rgba(201,168,76,0.1)', padding: '4px 12px', borderRadius: 20 }}>
-            ✦ 인기 응원
+            {cheerLabel.section}
           </div>
 
           {best[0] ? (
@@ -536,7 +561,7 @@ export default function CheerClient({ initialLatest, initialBest, initialTotal }
                   animationTimingFunction: 'ease-in-out', animationIterationCount: 'infinite',
                   display: 'inline-block',
                 }}>🥇</span>
-                <span style={{ fontSize: 'clamp(12px,0.85vw,17px)', fontWeight: 800, color: accentD, letterSpacing: '0.2em' }}>1위</span>
+                <span style={{ fontSize: 'clamp(12px,0.85vw,17px)', fontWeight: 800, color: accentD, letterSpacing: '0.2em' }}>{cheerLabel.first}</span>
               </div>
               {best[0].image_url && (
                 <img src={best[0].image_url} alt="" style={{ width: '100%', maxHeight: 'clamp(80px,8vh,140px)', objectFit: 'cover', borderRadius: 10, marginBottom: 10 }} />
@@ -558,7 +583,7 @@ export default function CheerClient({ initialLatest, initialBest, initialTotal }
             {best.slice(1).map((msg, i) => (
               <div key={msg.id} style={{ background: '#f2f0ec', borderRadius: 14, padding: 'clamp(8px,0.9vh,16px) clamp(10px,1vw,18px)', flexShrink: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
-                  <span style={{ fontSize: 'clamp(12px,0.85vw,17px)', fontWeight: 700, color: accentD, letterSpacing: '0.15em' }}>{i === 0 ? '🥈 2위' : '🥉 3위'}</span>
+                  <span style={{ fontSize: 'clamp(12px,0.85vw,17px)', fontWeight: 700, color: accentD, letterSpacing: '0.15em' }}>{i === 0 ? cheerLabel.second : cheerLabel.third}</span>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 'clamp(12px,0.85vw,17px)', color: accentD, fontWeight: 600 }}>
                     <PiHandsPrayingFill size={13} color={accent} /><span>{msg.likes_count}</span>
                   </div>

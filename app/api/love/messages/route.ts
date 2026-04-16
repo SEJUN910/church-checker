@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 40;
 
 function getClient() {
   return createClient(
