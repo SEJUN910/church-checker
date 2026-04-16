@@ -33,11 +33,7 @@ const CONFETTI_ANIMS  = ['confettiPopA','confettiPopB','confettiPopC','confettiP
 const FLOAT_ANIMS     = ['floatA','floatB','floatC'];
 
 const CHEER_SETS = [
-  { section: '🏆 TOP 응원',      first: '가장 빛난 응원',  second: '따뜻한 응원',   third: '함께한 응원'   },
-  { section: '✨ 빛난 응원',      first: '가장 빛난 응원',  second: '반짝인 응원',   third: '따뜻한 응원'   },
-  { section: '🙏 공감한 응원',    first: '가장 공감한 응원', second: '마음 닿은 응원', third: '함께 나눈 응원' },
-  { section: '💛 함께한 응원',    first: '가장 따뜻한 응원', second: '마음 모은 응원', third: '사랑 담은 응원' },
-  { section: '🔥 뜨거운 응원',    first: '가장 뜨거운 응원', second: '열정 응원',     third: '활기찬 응원'   },
+  { section: '🙏사랑의 응원', first: '사랑', second: '감사', third: '은혜' },
 ];
 
 function hashId(id: string): number {
@@ -74,7 +70,7 @@ function ChatBubble({ msg, isNew }: { msg: Message; isNew: boolean }) {
       animationTimingFunction: isNew ? 'ease-in-out' : undefined,
       animationIterationCount: isNew ? 'infinite' : undefined,
     }}>
-      {/* 버블 */}
+      {/* 버블 */}gold
       <div style={{ position: 'relative', display: 'inline-block', maxWidth: '72%' }}>
         <div style={{
           background: '#ffffff',

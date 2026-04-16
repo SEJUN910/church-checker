@@ -60,6 +60,7 @@ async function compressImage(file: File, maxBytes = 5 * 1024 * 1024): Promise<Bl
 
 const cream     = '#f7f3ed';
 const parchment = '#ede7dc';
+const gold      = '#b89a5a';
 const goldLight = '#d4b87a';
 const ink       = '#1e1a14';
 const inkMid    = '#4a4236';
@@ -67,12 +68,14 @@ const inkSoft   = '#7a7060';
 
 const cardBase: React.CSSProperties = {
   background: '#fff',
-  border: `1px solid ${parchment}`,
+  borderTop: `1px solid ${parchment}`,
+  borderRight: `1px solid ${parchment}`,
+  borderBottom: `1px solid ${parchment}`,
   borderLeft: `3px solid ${gold}`,
   borderRadius: '0 8px 8px 0',
   padding: '18px 20px',
   marginBottom: 10,
-  boxShadow: '0 2px 12px rgba(184,154,90,0.08)',
+  boxShadow: `0 2px 12px rgba(184,154,90,0.08)`,
 };
 
 function SectionHeader({ title }: { title: string }) {
