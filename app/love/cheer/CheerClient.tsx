@@ -32,9 +32,7 @@ const CONFETTI_COLORS = ['#f4a0a8','#f9c98a','#fde68a','#a7d9b0','#a5c8f0','#c4b
 const CONFETTI_ANIMS  = ['confettiPopA','confettiPopB','confettiPopC','confettiPopD','confettiPopE','confettiPopF','confettiPopG','confettiPopH'];
 const FLOAT_ANIMS     = ['floatA','floatB','floatC'];
 
-const CHEER_SETS = [
-  { section: '🙏사랑의 응원', first: '사랑', second: '감사', third: '은혜' },
-];
+const CHEER_LABEL = { section: '💌사랑의 응원', first: '사랑', second: '감사', third: '은혜' };
 
 function hashId(id: string): number {
   let h = 0;
@@ -70,7 +68,7 @@ function ChatBubble({ msg, isNew }: { msg: Message; isNew: boolean }) {
       animationTimingFunction: isNew ? 'ease-in-out' : undefined,
       animationIterationCount: isNew ? 'infinite' : undefined,
     }}>
-      {/* 버블 */}gold
+      {/* 버블 */}
       <div style={{ position: 'relative', display: 'inline-block', maxWidth: '72%' }}>
         <div style={{
           background: '#ffffff',
@@ -155,7 +153,7 @@ export default function CheerClient({ initialLatest, initialBest, initialTotal }
   const burstBusy                       = useRef(false);
   const [isMobile, setIsMobile]         = useState(false);
   const [mobileTab, setMobileTab]       = useState(1); // 0=베스트, 1=피드, 2=시계
-  const [cheerLabel, setCheerLabel]     = useState(() => CHEER_SETS[Math.floor(Math.random() * CHEER_SETS.length)]);
+  const cheerLabel = CHEER_LABEL;
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 640);
@@ -318,15 +316,6 @@ export default function CheerClient({ initialLatest, initialBest, initialTotal }
     return () => clearInterval(iv);
   }, []);
 
-  useEffect(() => {
-    const iv = setInterval(() => {
-      setCheerLabel(prev => {
-        const next = CHEER_SETS.filter(s => s !== prev);
-        return next[Math.floor(Math.random() * next.length)];
-      });
-    }, 10_000);
-    return () => clearInterval(iv);
-  }, []);
 
   const fireHearts = useCallback(() => {
     const newH: HeartParticle[] = Array.from({ length: 12 }, () => ({
