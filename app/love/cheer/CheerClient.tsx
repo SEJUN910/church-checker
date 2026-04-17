@@ -451,7 +451,18 @@ export default function CheerClient({ initialLatest, initialBest, initialTotal }
       )}
 
       {/* ── 모바일 헤더 ── */}
-      {isMobile && (() => {
+      {isMobile && (() => {<svg width="24" height="24" viewBox="0 0 24 24">
+  <defs>
+    <linearGradient id="hg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stopColor="#ff6b9d"/>
+      <stop offset="100%" stopColor="#c44dff"/>
+    </linearGradient>
+  </defs>
+  <path
+    d="M12 21C12 21 3 14 3 8a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 6-9 13-9 13z"
+    fill="url(#hg)"
+  />
+</svg>
         const h24 = now.getHours();
         const isPM = h24 >= 12;
         const h12 = h24 % 12 || 12;
@@ -541,11 +552,11 @@ export default function CheerClient({ initialLatest, initialBest, initialTotal }
               }} />
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
                 <span style={{
-                  fontSize: 'clamp(22px,2.2vw,38px)',
+                  fontSize: 'clamp(22px,2.2vw,24px)',
                   animationName: 'crownWiggle', animationDuration: '2.0s',
                   animationTimingFunction: 'ease-in-out', animationIterationCount: 'infinite',
                   display: 'inline-block',
-                }}>🥇</span>
+                }}>🩷</span>
                 <span style={{ fontSize: 'clamp(12px,0.85vw,17px)', fontWeight: 800, color: accentD, letterSpacing: '0.2em' }}>{cheerLabel.first}</span>
               </div>
               {best[0].image_url && (
