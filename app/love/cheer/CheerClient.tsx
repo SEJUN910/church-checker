@@ -556,7 +556,7 @@ export default function CheerClient({ initialLatest, initialBest, initialTotal }
                   animationName: 'crownWiggle', animationDuration: '2.0s',
                   animationTimingFunction: 'ease-in-out', animationIterationCount: 'infinite',
                   display: 'inline-block',
-                }}>🩷</span>
+                }}>❤️</span>
                 <span style={{ fontSize: 'clamp(12px,0.85vw,17px)', fontWeight: 800, color: accentD, letterSpacing: '0.2em' }}>{cheerLabel.first}</span>
               </div>
               {best[0].image_url && (
